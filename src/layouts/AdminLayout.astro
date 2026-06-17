@@ -1,25 +1,50 @@
-import BaseLayout from './BaseLayout.astro';
+---
+import '../styles/global.css';
+import { AdminSignOut } from '../components/react/AdminSignOut';
+
+const pathname = Astro.url.pathname;
+
+function navClass(href: string) {
+  const active =
+    href === '/admin' ? pathname === '/admin' : pathname === href || pathname.startsWith(`${href}/`);
+  return active ? 'admin-nav-link admin-nav-link-active' : 'admin-nav-link';
+}
 ---
 
-<BaseLayout title="Admin — Chess Tournament Curicó" wide={true}>
-  <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-    <a href="/admin" class="font-display text-xl font-bold text-teal">Panel admin</a>
-    <div class="flex flex-wrap items-center gap-2">
-      <nav class="flex flex-wrap gap-2 text-sm">
-        <a href="/admin" class="rounded-lg px-3 py-1.5 hover:bg-sand">Dashboard</a>
-        <a href="/admin/jugadores" class="rounded-lg px-3 py-1.5 hover:bg-sand">Jugadores</a>
-        <a href="/admin/torneo" class="rounded-lg px-3 py-1.5 hover:bg-sand">Torneo</a>
-        <a href="/admin/rondas" class="rounded-lg px-3 py-1.5 hover:bg-sand">Rondas</a>
-        <a href="/admin/usuarios" class="rounded-lg px-3 py-1.5 hover:bg-sand">Admins</a>
-        <a href="/live" class="rounded-lg px-3 py-1.5 hover:bg-sand">Live</a>
-        <a href="/" class="rounded-lg px-3 py-1.5 text-ink/60 hover:bg-sand">Sitio público</a>
-      </nav>
-      <form method="post" action="/api/auth/signout">
-        <button type="submit" class="rounded-lg px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">
-          Salir
-        </button>
-      </form>
-    </div>
-  </div>
-  <slot />
-</BaseLayout>
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Syne:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <title>Admin — Chess Tournament Curicó</title>
+  </head>
+  <body class="min-h-screen bg-bg text-ink">
+    <header class="section-dark sticky top-0 z-50 border-b border-white/10">
+      <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4">
+        <a href="/admin" class="font-display text-lg font-bold text-white">Panel admin</a>
+        <div class="flex flex-wrap items-center gap-2">
+          <nav class="flex flex-wrap gap-1">
+            <a href="/admin" class={navClass('/admin')}>Dashboard</a>
+            <a href="/admin/jugadores" class={navClass('/admin/jugadores')}>Jugadores</a>
+            <a href="/admin/torneo" class={navClass('/admin/torneo')}>Torneo</a>
+            <a href="/admin/rondas" class={navClass('/admin/rondas')}>Rondas</a>
+            <a href="/admin/usuarios" class={navClass('/admin/usuarios')}>Admins</a>
+            <a href="/live" class="admin-nav-link">Live</a>
+            <a href="/" class="admin-nav-link text-white/50">Sitio público</a>
+          </nav>
+          <AdminSignOut client:load />
+        </div>
+      </div>
+    </header>
+    <main class="mx-auto max-w-7xl px-4 py-8">
+      <slot />
+    </main>
+  </body>
+</html>

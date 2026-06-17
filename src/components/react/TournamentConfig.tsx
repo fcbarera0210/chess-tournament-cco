@@ -63,19 +63,23 @@ export function TournamentConfig() {
     setSaving(false);
   }
 
-  if (!tournament) return <p>Cargando...</p>;
+  if (!tournament) return <p className="text-muted">Cargando...</p>;
 
   const canStart = tournament.status !== 'live' && tournament.status !== 'finished';
 
   return (
     <div className="space-y-6">
-      {message && <p className="text-sm text-teal">{message}</p>}
+      {message && (
+        <p className={`text-sm ${message === 'Guardado' ? 'text-finished' : 'text-muted'}`}>
+          {message}
+        </p>
+      )}
 
-      <div className="grid gap-4 rounded-2xl border border-sand bg-white p-4">
+      <div className="admin-card grid gap-4 p-5">
         <label className="block">
           <span className="text-sm font-medium">Nombre del evento</span>
           <input
-            className="mt-1 w-full rounded-xl border border-sand px-4 py-2"
+            className="admin-input mt-1"
             value={tournament.name}
             onChange={(e) => setTournament({ ...tournament, name: e.target.value })}
             onBlur={() => save({ name: tournament.name })}
@@ -84,7 +88,7 @@ export function TournamentConfig() {
         <label className="block">
           <span className="text-sm font-medium">Lugar</span>
           <input
-            className="mt-1 w-full rounded-xl border border-sand px-4 py-2"
+            className="admin-input mt-1"
             value={tournament.venue}
             onChange={(e) => setTournament({ ...tournament, venue: e.target.value })}
             onBlur={() => save({ venue: tournament.venue })}
@@ -94,7 +98,7 @@ export function TournamentConfig() {
           <label className="block">
             <span className="text-sm font-medium">Hora inicio</span>
             <input
-              className="mt-1 w-full rounded-xl border border-sand px-4 py-2"
+              className="admin-input mt-1"
               value={tournament.eventTimeStart}
               onChange={(e) => setTournament({ ...tournament, eventTimeStart: e.target.value })}
               onBlur={() => save({ eventTimeStart: tournament.eventTimeStart })}
@@ -103,7 +107,7 @@ export function TournamentConfig() {
           <label className="block">
             <span className="text-sm font-medium">Hora fin</span>
             <input
-              className="mt-1 w-full rounded-xl border border-sand px-4 py-2"
+              className="admin-input mt-1"
               value={tournament.eventTimeEnd}
               onChange={(e) => setTournament({ ...tournament, eventTimeEnd: e.target.value })}
               onBlur={() => save({ eventTimeEnd: tournament.eventTimeEnd })}
@@ -113,7 +117,7 @@ export function TournamentConfig() {
         <label className="block">
           <span className="text-sm font-medium">Control de tiempo</span>
           <input
-            className="mt-1 w-full rounded-xl border border-sand px-4 py-2"
+            className="admin-input mt-1"
             value={tournament.timeControl}
             onChange={(e) => setTournament({ ...tournament, timeControl: e.target.value })}
             onBlur={() => save({ timeControl: tournament.timeControl })}
@@ -123,7 +127,7 @@ export function TournamentConfig() {
           <span className="text-sm font-medium">Cupo máximo</span>
           <input
             type="number"
-            className="mt-1 w-full rounded-xl border border-sand px-4 py-2"
+            className="admin-input mt-1"
             value={tournament.maxPlayers}
             onChange={(e) =>
               setTournament({ ...tournament, maxPlayers: parseInt(e.target.value, 10) })
@@ -135,7 +139,7 @@ export function TournamentConfig() {
         {canStart && (
           <div>
             <span className="text-sm font-medium">Formato</span>
-            <div className="mt-2 flex gap-3">
+            <div className="mt-2 flex gap-2">
               {(['swiss', 'knockout'] as const).map((f) => (
                 <button
                   key={f}
@@ -144,7 +148,11 @@ export function TournamentConfig() {
                     setTournament({ ...tournament, format: f });
                     save({ format: f });
                   }}
-                  className={`rounded-full px-4 py-2 text-sm font-medium ${tournament.format === f ? 'bg-teal text-white' : 'bg-sand'}`}
+                  className={
+                    tournament.format === f
+                      ? 'admin-chip admin-chip-active'
+                      : 'admin-chip admin-chip-inactive'
+                  }
                 >
                   {f === 'swiss' ? 'Suizo' : 'Eliminatoria'}
                 </button>
@@ -159,14 +167,22 @@ export function TournamentConfig() {
             <button
               type="button"
               onClick={() => save({ status: 'registration_open' })}
-              className={`rounded-full px-4 py-2 text-sm ${tournament.status === 'registration_open' ? 'bg-teal text-white' : 'bg-sand'}`}
+              className={
+                tournament.status === 'registration_open'
+                  ? 'admin-chip admin-chip-active'
+                  : 'admin-chip admin-chip-inactive'
+              }
             >
               Abiertas
             </button>
             <button
               type="button"
               onClick={() => save({ status: 'registration_closed' })}
-              className={`rounded-full px-4 py-2 text-sm ${tournament.status === 'registration_closed' ? 'bg-teal text-white' : 'bg-sand'}`}
+              className={
+                tournament.status === 'registration_closed'
+                  ? 'admin-chip admin-chip-active'
+                  : 'admin-chip admin-chip-inactive'
+              }
             >
               Cerradas
             </button>
@@ -179,7 +195,7 @@ export function TournamentConfig() {
           type="button"
           disabled={saving}
           onClick={startTournament}
-          className="w-full rounded-xl bg-teal py-4 text-lg font-bold text-white hover:bg-teal-light disabled:opacity-60"
+          className="admin-btn admin-btn-primary w-full py-4 text-lg"
         >
           Iniciar torneo (crear ronda 1)
         </button>

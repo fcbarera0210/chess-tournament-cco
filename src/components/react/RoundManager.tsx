@@ -129,26 +129,32 @@ export function RoundManager({ roundNumber }: Props) {
     }
   }
 
-  if (loading) return <p>Cargando ronda...</p>;
-  if (!round) return <p>Ronda no encontrada</p>;
+  if (loading) return <p className="text-muted">Cargando ronda...</p>;
+  if (!round) return <p className="text-muted">Ronda no encontrada</p>;
 
   const showPairingEditor = round.status === 'draft' && games.length === 0;
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-2xl font-bold">
+      <h1 className="font-display text-3xl font-bold">
         Ronda {round.roundNumber}
-        <span className="ml-2 text-base font-normal text-ink/60">({round.status})</span>
+        <span className="ml-2 text-base font-normal text-muted">({round.status})</span>
       </h1>
 
-      {message && <p className="text-sm text-teal">{message}</p>}
+      {message && (
+        <p className={`text-sm ${message.includes('Error') ? 'text-red-600' : 'text-finished'}`}>
+          {message}
+        </p>
+      )}
 
       {round.status === 'draft' && games.length > 0 && (
         <div className="space-y-3">
-          <p className="text-sm text-ink/60">Emparejamientos guardados. Activa la ronda para comenzar.</p>
+          <p className="text-sm text-muted">
+            Emparejamientos guardados. Activa la ronda para comenzar.
+          </p>
           {games.map((g) => (
-            <div key={g.id} className="rounded-xl border border-sand bg-white p-3">
-              <span className="font-semibold text-teal">Mesa {g.boardNumber}: </span>
+            <div key={g.id} className="admin-card p-3">
+              <span className="font-display font-semibold">Mesa {g.boardNumber}: </span>
               {g.isBye
                 ? `${g.whiteName ?? g.blackName} — bye`
                 : `${g.whiteName} vs ${g.blackName}`}
@@ -157,7 +163,7 @@ export function RoundManager({ roundNumber }: Props) {
           <button
             type="button"
             onClick={activateRound}
-            className="w-full rounded-xl bg-teal py-3 font-semibold text-white"
+            className="admin-btn admin-btn-primary w-full py-3"
           >
             Activar ronda
           </button>
@@ -165,15 +171,15 @@ export function RoundManager({ roundNumber }: Props) {
       )}
 
       {showPairingEditor && (
-        <div className="space-y-4 rounded-2xl border border-sand bg-white p-4">
-          <h2 className="font-semibold">Emparejamientos</h2>
+        <div className="admin-card space-y-4 p-5">
+          <h2 className="font-display font-bold">Emparejamientos</h2>
           {pairings.length === 0 && (
-            <button type="button" onClick={addPairing} className="rounded-lg bg-sand px-4 py-2 text-sm">
+            <button type="button" onClick={addPairing} className="admin-btn admin-btn-secondary text-sm">
               Agregar primera mesa
             </button>
           )}
           {pairings.map((p, idx) => (
-            <div key={idx} className="grid gap-2 rounded-xl bg-cream p-3 sm:grid-cols-2">
+            <div key={idx} className="grid gap-2 rounded-xl bg-bg p-3 sm:grid-cols-2">
               <select
                 value={p.whitePlayerId}
                 onChange={(e) => {
@@ -181,11 +187,13 @@ export function RoundManager({ roundNumber }: Props) {
                   next[idx].whitePlayerId = e.target.value;
                   setPairings(next);
                 }}
-                className="rounded-lg border border-sand px-3 py-2"
+                className="admin-input py-2"
               >
                 <option value="">Blancas...</option>
                 {checkedInPlayers.map((pl) => (
-                  <option key={pl.id} value={pl.id}>{pl.name}</option>
+                  <option key={pl.id} value={pl.id}>
+                    {pl.name}
+                  </option>
                 ))}
               </select>
               <select
@@ -196,11 +204,13 @@ export function RoundManager({ roundNumber }: Props) {
                   next[idx].blackPlayerId = e.target.value;
                   setPairings(next);
                 }}
-                className="rounded-lg border border-sand px-3 py-2"
+                className="admin-input py-2"
               >
                 <option value="">Negras...</option>
                 {checkedInPlayers.map((pl) => (
-                  <option key={pl.id} value={pl.id}>{pl.name}</option>
+                  <option key={pl.id} value={pl.id}>
+                    {pl.name}
+                  </option>
                 ))}
               </select>
               <label className="flex items-center gap-2 text-sm sm:col-span-2">
@@ -219,13 +229,13 @@ export function RoundManager({ roundNumber }: Props) {
             </div>
           ))}
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={addPairing} className="rounded-lg bg-sand px-4 py-2 text-sm">
+            <button type="button" onClick={addPairing} className="admin-btn admin-btn-secondary text-sm">
               + Mesa
             </button>
-            <button type="button" onClick={savePairings} className="rounded-lg bg-teal px-4 py-2 text-sm text-white">
+            <button type="button" onClick={savePairings} className="admin-btn admin-btn-primary text-sm">
               Guardar
             </button>
-            <button type="button" onClick={activateRound} className="rounded-lg bg-teal-light px-4 py-2 text-sm text-white">
+            <button type="button" onClick={activateRound} className="admin-btn admin-btn-primary text-sm">
               Activar ronda
             </button>
           </div>
@@ -235,8 +245,8 @@ export function RoundManager({ roundNumber }: Props) {
       {games.length > 0 && (
         <div className="space-y-3">
           {games.map((g) => (
-            <div key={g.id} className="rounded-2xl border border-sand bg-white p-4">
-              <p className="mb-2 font-display font-bold text-teal">Mesa {g.boardNumber}</p>
+            <div key={g.id} className="admin-card p-4">
+              <p className="mb-2 font-display font-bold">Mesa {g.boardNumber}</p>
               <p className="text-lg font-semibold">
                 {g.isBye
                   ? `${g.whiteName ?? g.blackName} — bye`
@@ -253,7 +263,7 @@ export function RoundManager({ roundNumber }: Props) {
                       key={btn.result}
                       type="button"
                       onClick={() => setResult(g.id, btn.result)}
-                      className="min-h-[48px] rounded-xl bg-teal py-3 text-lg font-bold text-white active:bg-teal-light"
+                      className="admin-btn admin-btn-primary min-h-[48px] py-3 text-lg"
                     >
                       {btn.label}
                     </button>
@@ -269,7 +279,7 @@ export function RoundManager({ roundNumber }: Props) {
             <button
               type="button"
               onClick={completeRound}
-              className="w-full rounded-xl border-2 border-teal py-3 font-semibold text-teal"
+              className="admin-btn admin-btn-secondary w-full border-2 border-ink py-3 font-semibold"
             >
               Cerrar ronda
             </button>
@@ -278,7 +288,7 @@ export function RoundManager({ roundNumber }: Props) {
       )}
 
       {round.status === 'draft' && games.length === 0 && pairings.length === 0 && (
-        <p className="text-ink/60">Configura los emparejamientos y activa la ronda.</p>
+        <p className="text-muted">Configura los emparejamientos y activa la ronda.</p>
       )}
     </div>
   );

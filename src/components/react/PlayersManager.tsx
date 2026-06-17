@@ -56,7 +56,7 @@ export function PlayersManager() {
     withdrawn: 'Retirado',
   };
 
-  if (loading) return <p>Cargando jugadores...</p>;
+  if (loading) return <p className="text-muted">Cargando jugadores...</p>;
 
   return (
     <div className="space-y-4">
@@ -66,7 +66,7 @@ export function PlayersManager() {
             key={f}
             type="button"
             onClick={() => setFilter(f)}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium ${filter === f ? 'bg-teal text-white' : 'bg-sand text-ink/70'}`}
+            className={filter === f ? 'admin-chip admin-chip-active' : 'admin-chip admin-chip-inactive'}
           >
             {f === 'all' ? 'Todos' : statusLabel[f]}
           </button>
@@ -78,19 +78,19 @@ export function PlayersManager() {
         placeholder="Buscar jugador..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full rounded-xl border border-sand px-4 py-2.5"
+        className="admin-input"
       />
 
       <div className="space-y-2">
         {filtered.map((p) => (
-          <div key={p.id} className="rounded-xl border border-sand bg-white p-4">
+          <div key={p.id} className="admin-card p-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="font-semibold">{p.name}</p>
-                <p className="text-sm text-ink/60">{p.contact}</p>
-                {p.clubLevel && <p className="text-xs text-ink/50">{p.clubLevel}</p>}
+                <p className="text-sm text-muted">{p.contact}</p>
+                {p.clubLevel && <p className="text-xs text-muted">{p.clubLevel}</p>}
               </div>
-              <span className="rounded-full bg-sand px-2.5 py-1 text-xs font-medium">
+              <span className="admin-chip admin-chip-inactive text-xs">
                 {statusLabel[p.status] ?? p.status}
               </span>
             </div>
@@ -99,7 +99,7 @@ export function PlayersManager() {
                 <button
                   type="button"
                   onClick={() => updateStatus(p.id, 'checked_in')}
-                  className="rounded-lg bg-teal px-3 py-2 text-sm font-medium text-white"
+                  className="admin-btn admin-btn-primary px-3 py-2 text-sm"
                 >
                   Check-in
                 </button>
@@ -108,7 +108,7 @@ export function PlayersManager() {
                 <button
                   type="button"
                   onClick={() => updateStatus(p.id, 'registered')}
-                  className="rounded-lg bg-sand px-3 py-2 text-sm"
+                  className="admin-btn admin-btn-secondary px-3 py-2 text-sm"
                 >
                   Quitar check-in
                 </button>
@@ -117,7 +117,7 @@ export function PlayersManager() {
                 <button
                   type="button"
                   onClick={() => promote(p.id)}
-                  className="rounded-lg bg-gold/20 px-3 py-2 text-sm font-medium"
+                  className="admin-btn admin-btn-secondary px-3 py-2 text-sm"
                 >
                   Promover a inscrito
                 </button>
@@ -126,7 +126,7 @@ export function PlayersManager() {
                 <button
                   type="button"
                   onClick={() => updateStatus(p.id, 'withdrawn')}
-                  className="rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                  className="admin-btn px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                 >
                   Retirar
                 </button>

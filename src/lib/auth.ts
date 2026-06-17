@@ -16,6 +16,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export const authConfig: AuthConfig = {
+  basePath: '/api/auth',
   providers: [
     Credentials({
       name: 'Credentials',

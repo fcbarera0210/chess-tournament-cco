@@ -35,11 +35,7 @@ export function RoundsList() {
 
   return (
     <div className="space-y-4">
-      <button
-        type="button"
-        onClick={createRound}
-        className="rounded-xl bg-teal px-4 py-3 font-semibold text-white"
-      >
+      <button type="button" onClick={createRound} className="admin-btn admin-btn-primary px-5 py-3">
         + Nueva ronda
       </button>
       <div className="space-y-2">
@@ -47,14 +43,14 @@ export function RoundsList() {
           <a
             key={r.id}
             href={`/admin/rondas/${r.roundNumber}`}
-            className="flex items-center justify-between rounded-xl border border-sand bg-white p-4 hover:bg-cream"
+            className="admin-card flex items-center justify-between p-4 transition hover:bg-bg"
           >
-            <span className="font-semibold">Ronda {r.roundNumber}</span>
-            <span className="rounded-full bg-sand px-3 py-1 text-sm">{statusLabel[r.status]}</span>
+            <span className="font-display font-semibold">Ronda {r.roundNumber}</span>
+            <span className="admin-chip admin-chip-inactive">{statusLabel[r.status]}</span>
           </a>
         ))}
         {rounds.length === 0 && (
-          <p className="text-ink/60">No hay rondas. Inicia el torneo desde Configuración.</p>
+          <p className="text-muted">No hay rondas. Inicia el torneo desde Configuración.</p>
         )}
       </div>
     </div>

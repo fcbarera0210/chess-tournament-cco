@@ -11,16 +11,16 @@ type Piece = {
 
 const defaultPieces: Piece[] = [
   {
-    src: '/images/chess/piece-queen-black.svg',
-    className: 'float-piece absolute -left-4 top-8 h-24 w-24 md:h-32 md:w-32',
-    width: 120,
-    height: 120,
+    src: '/images/chess/b-queen.svg',
+    className: 'float-piece absolute -left-4 top-8 h-24 w-auto md:h-32',
+    width: 124,
+    height: 125,
   },
   {
-    src: '/images/chess/piece-knight-white.svg',
-    className: 'float-piece-delayed absolute right-4 top-12 h-20 w-20 blur-[1px] md:h-28 md:w-28',
-    width: 100,
-    height: 100,
+    src: '/images/chess/w-knight-front.svg',
+    className: 'float-piece-delayed absolute right-4 top-12 h-20 w-auto blur-[1px] md:h-28',
+    width: 105,
+    height: 96,
   },
 ];
 

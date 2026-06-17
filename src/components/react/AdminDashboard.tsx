@@ -20,47 +20,61 @@ export function AdminDashboard() {
       });
   }, []);
 
-  if (!data) return <p>Cargando...</p>;
+  if (!data) return <p className="text-muted">Cargando...</p>;
+
+  const statusLabel: Record<string, string> = {
+    registration_open: 'Inscripciones abiertas',
+    registration_closed: 'Inscripciones cerradas',
+    live: 'En juego',
+    finished: 'Finalizado',
+  };
 
   return (
-    <div className="space-y-6">
-      <h1 className="font-display text-2xl font-bold">{data.tournament.name}</h1>
-      <p className="text-ink/60">Estado: {data.tournament.status}</p>
+    <div className="space-y-8">
+      <div>
+        <h1 className="font-display text-3xl font-bold">{data.tournament.name}</h1>
+        <p className="mt-1 text-muted">
+          {statusLabel[data.tournament.status] ?? data.tournament.status}
+        </p>
+      </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-2xl border border-sand bg-white p-4 text-center">
-          <p className="text-3xl font-bold text-teal">{data.stats.registered}</p>
-          <p className="text-sm text-ink/60">Inscritos</p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="admin-card p-5 text-center">
+          <p className="admin-stat-value">{data.stats.registered}</p>
+          <p className="mt-2 text-sm text-muted">Inscritos</p>
         </div>
-        <div className="rounded-2xl border border-sand bg-white p-4 text-center">
-          <p className="text-3xl font-bold text-teal">{data.stats.checkedIn}</p>
-          <p className="text-sm text-ink/60">Check-in</p>
+        <div className="admin-card p-5 text-center">
+          <p className="admin-stat-value">{data.stats.checkedIn}</p>
+          <p className="mt-2 text-sm text-muted">Check-in</p>
         </div>
-        <div className="rounded-2xl border border-sand bg-white p-4 text-center">
-          <p className="text-3xl font-bold text-teal">{round?.roundNumber ?? '—'}</p>
-          <p className="text-sm text-ink/60">Ronda actual</p>
+        <div className="admin-card p-5 text-center">
+          <p className="admin-stat-value">{round?.roundNumber ?? '—'}</p>
+          <p className="mt-2 text-sm text-muted">Ronda actual</p>
         </div>
       </div>
 
       {round && round.pendingGames > 0 && (
-        <div className="rounded-xl bg-pending/10 px-4 py-3 text-pending">
+        <div className="rounded-xl border border-pending/30 bg-pending/10 px-4 py-3 text-sm font-medium text-pending">
           {round.pendingGames} partidas sin resultado en ronda {round.roundNumber}
         </div>
       )}
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <a href="/admin/jugadores" className="rounded-xl border border-sand bg-white p-4 font-medium hover:bg-cream">
-          Gestionar jugadores
-        </a>
-        <a href="/admin/rondas" className="rounded-xl border border-sand bg-white p-4 font-medium hover:bg-cream">
-          Ver rondas
-        </a>
-        <a href="/live" className="rounded-xl border border-sand bg-white p-4 font-medium hover:bg-cream">
-          Monitoreo live
-        </a>
-        <a href="/kiosk" className="rounded-xl border border-sand bg-white p-4 font-medium hover:bg-cream">
-          Vista kiosk
-        </a>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {[
+          { href: '/admin/jugadores', label: 'Gestionar jugadores' },
+          { href: '/admin/rondas', label: 'Ver rondas' },
+          { href: '/live', label: 'Monitoreo live' },
+          { href: '/kiosk', label: 'Vista kiosk' },
+        ].map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            className="admin-card flex items-center justify-between p-4 font-medium transition hover:bg-bg"
+          >
+            {link.label}
+            <span className="text-muted">→</span>
+          </a>
+        ))}
       </div>
     </div>
   );
