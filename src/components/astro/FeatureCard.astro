@@ -1,0 +1,38 @@
+---
+interface Props {
+  number: string;
+  title: string;
+  variant?: 'light' | 'dark';
+  image?: string;
+  imageAlt?: string;
+}
+
+const { number, title, variant = 'light', image, imageAlt = '' } = Astro.props;
+const isDark = variant === 'dark';
+---
+
+<div
+  class:list={[
+    'relative flex min-h-[200px] flex-col justify-between overflow-hidden rounded-3xl p-6 md:min-h-[240px] md:p-8',
+    isDark ? 'card-dark' : 'card-light',
+  ]}
+>
+  <span class="num-badge mb-4 w-fit">{number}</span>
+  <h3 class="font-display max-w-[80%] text-xl font-bold leading-snug md:text-2xl">
+    {title}
+  </h3>
+  {
+    image && (
+      <img
+        src={image}
+        alt={imageAlt}
+        width="80"
+        height="80"
+        loading="lazy"
+        decoding="async"
+        class="absolute bottom-4 right-4 h-16 w-16 object-contain opacity-90 md:h-20 md:w-20"
+      />
+    )
+  }
+  <slot />
+</div>

@@ -1,0 +1,9 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { AdminUsersManager } from '../../components/react/AdminUsersManager';
+---
+
+<AdminLayout>
+  <h1 class="font-display mb-6 text-2xl font-bold">Administradores</h1>
+  <AdminUsersManager client:load />
+</AdminLayout>

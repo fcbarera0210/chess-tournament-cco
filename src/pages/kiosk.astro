@@ -1,0 +1,12 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { LiveView } from '../components/react/LiveView';
+
+export const prerender = false;
+
+const cols = Number(Astro.url.searchParams.get('cols') ?? '3');
+---
+
+<BaseLayout title="Kiosk — Chess Tournament Curicó" kiosk={true}>
+  <LiveView client:load mode="kiosk" cols={cols} />
+</BaseLayout>

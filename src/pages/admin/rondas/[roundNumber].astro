@@ -1,0 +1,11 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { RoundManager } from '../../../components/react/RoundManager';
+
+const { roundNumber } = Astro.params;
+const num = parseInt(roundNumber ?? '1', 10);
+---
+
+<AdminLayout>
+  <RoundManager client:load roundNumber={num} />
+</AdminLayout>

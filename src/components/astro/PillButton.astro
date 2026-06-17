@@ -1,0 +1,19 @@
+---
+interface Props {
+  href: string;
+  variant?: 'primary' | 'outline' | 'outline-light';
+  class?: string;
+}
+
+const { href, variant = 'primary', class: className = '' } = Astro.props;
+
+const variants = {
+  primary: 'btn-pill btn-pill-primary',
+  outline: 'btn-pill btn-pill-outline',
+  'outline-light': 'btn-pill border-2 border-white text-white hover:bg-white/10',
+};
+---
+
+<a href={href} class:list={[variants[variant], className]}>
+  <slot />
+</a>

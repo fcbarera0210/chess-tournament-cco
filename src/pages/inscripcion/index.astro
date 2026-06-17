@@ -1,0 +1,97 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { RegistrationForm } from '../../components/react/RegistrationForm';
+import { getActiveTournament, getRegistrationStats } from '../../lib/tournament';
+
+export const prerender = false;
+
+const tournament = await getActiveTournament();
+const stats = tournament ? await getRegistrationStats(tournament.id) : null;
+
+const eventDate = tournament
+  ? new Date(tournament.eventDate + 'T12:00:00').toLocaleDateString('es-CL', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    })
+  : 'sábado 20 de junio';
+const venue = tournament?.venue ?? 'Curicó';
+---
+
+<BaseLayout title="Inscripción — Chess Tournament Curicó" wide={true}>
+  <div class="overflow-hidden rounded-3xl shadow-xl lg:grid lg:grid-cols-2">
+    <!-- Panel oscuro -->
+    <div class="section-dark relative flex flex-col justify-between p-8 md:p-12">
+      <div>
+        <a href="/" class="text-sm text-white/60 hover:text-white">← Volver</a>
+        <h1 class="font-display mt-6 text-3xl font-bold md:text-4xl">Inscripción al torneo</h1>
+        <p class="mt-3 text-white/70">Gratuita y abierta a todos · cupo limitado</p>
+
+        <dl class="mt-10 space-y-6 text-sm">
+          <div>
+            <dt class="text-white/50">Fecha</dt>
+            <dd class="mt-1 text-lg font-semibold capitalize">{eventDate}</dd>
+            <dd class="text-white/80">
+              {tournament?.eventTimeStart ?? '15:00'} – {tournament?.eventTimeEnd ?? '20:00'}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-white/50">Lugar</dt>
+            <dd class="mt-1 text-lg font-semibold">{venue}</dd>
+          </div>
+          <div>
+            <dt class="text-white/50">Formato</dt>
+            <dd class="mt-1 font-semibold">
+              Varias rondas · {tournament?.timeControl ?? '10+5'}
+            </dd>
+          </div>
+          {
+            stats && tournament && (
+              <div>
+                <dt class="text-white/50">Cupo</dt>
+                <dd class="mt-1 font-semibold">
+                  {stats.registered} / {tournament.maxPlayers} plazas
+                </dd>
+              </div>
+            )
+          }
+        </dl>
+      </div>
+
+      <div class="mt-12 flex items-end justify-between gap-4">
+        <img
+          src="/images/chess/piece-king-black.svg"
+          alt=""
+          width="64"
+          height="64"
+          loading="lazy"
+          class="h-14 w-14 opacity-80"
+          aria-hidden="true"
+        />
+        <img
+          src="/images/chess/piece-pawn-dark.svg"
+          alt=""
+          width="48"
+          height="48"
+          loading="lazy"
+          class="h-10 w-10 opacity-60"
+          aria-hidden="true"
+        />
+        <img
+          src="/images/chess/piece-queen-black.svg"
+          alt=""
+          width="72"
+          height="72"
+          loading="lazy"
+          class="h-16 w-16"
+          aria-hidden="true"
+        />
+      </div>
+    </div>
+
+    <!-- Panel formulario -->
+    <div class="bg-surface p-8 md:p-12">
+      <RegistrationForm client:load eventDate={eventDate} venue={venue} />
+    </div>
+  </div>
+</BaseLayout>

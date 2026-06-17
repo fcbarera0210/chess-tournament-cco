@@ -1,0 +1,25 @@
+import BaseLayout from './BaseLayout.astro';
+---
+
+<BaseLayout title="Admin — Chess Tournament Curicó" wide={true}>
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <a href="/admin" class="font-display text-xl font-bold text-teal">Panel admin</a>
+    <div class="flex flex-wrap items-center gap-2">
+      <nav class="flex flex-wrap gap-2 text-sm">
+        <a href="/admin" class="rounded-lg px-3 py-1.5 hover:bg-sand">Dashboard</a>
+        <a href="/admin/jugadores" class="rounded-lg px-3 py-1.5 hover:bg-sand">Jugadores</a>
+        <a href="/admin/torneo" class="rounded-lg px-3 py-1.5 hover:bg-sand">Torneo</a>
+        <a href="/admin/rondas" class="rounded-lg px-3 py-1.5 hover:bg-sand">Rondas</a>
+        <a href="/admin/usuarios" class="rounded-lg px-3 py-1.5 hover:bg-sand">Admins</a>
+        <a href="/live" class="rounded-lg px-3 py-1.5 hover:bg-sand">Live</a>
+        <a href="/" class="rounded-lg px-3 py-1.5 text-ink/60 hover:bg-sand">Sitio público</a>
+      </nav>
+      <form method="post" action="/api/auth/signout">
+        <button type="submit" class="rounded-lg px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">
+          Salir
+        </button>
+      </form>
+    </div>
+  </div>
+  <slot />
+</BaseLayout>

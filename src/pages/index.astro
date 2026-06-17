@@ -1,0 +1,125 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/astro/Hero.astro';
+import SectionDark from '../components/astro/SectionDark.astro';
+import FeatureCard from '../components/astro/FeatureCard.astro';
+import InfoRow from '../components/astro/InfoRow.astro';
+import { getActiveTournament, getRegistrationStats } from '../lib/tournament';
+
+export const prerender = false;
+
+const tournament = await getActiveTournament();
+const stats = tournament ? await getRegistrationStats(tournament.id) : null;
+
+const eventDate = tournament
+  ? new Date(tournament.eventDate + 'T12:00:00').toLocaleDateString('es-CL', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    })
+  : 'sábado 20 de junio';
+---
+
+<BaseLayout>
+  <Hero />
+
+  <SectionDark class="mt-12 rounded-3xl">
+    <h2 class="font-display mx-auto mb-12 max-w-2xl text-center text-3xl font-bold md:text-4xl">
+      ¿Por qué participar?
+    </h2>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <FeatureCard
+        number="01"
+        title="Inscripción gratuita"
+        variant="light"
+        image="/images/chess/piece-pawn-white.svg"
+        imageAlt=""
+      />
+      <FeatureCard
+        number="02"
+        title="Todos los niveles bienvenidos"
+        variant="dark"
+        image="/images/chess/piece-knight-white.svg"
+        imageAlt=""
+      />
+      <FeatureCard
+        number="03"
+        title="Varias rondas en el día"
+        variant="light"
+        image="/images/chess/piece-king-white.svg"
+        imageAlt=""
+      />
+      <FeatureCard
+        number="04"
+        title="Partidas en paralelo"
+        variant="dark"
+        image="/images/chess/piece-queen-black.svg"
+        imageAlt=""
+      />
+      <FeatureCard
+        number="05"
+        title="Clasificación en vivo"
+        variant="light"
+        image="/images/chess/piece-king-black.svg"
+        imageAlt=""
+      />
+    </div>
+  </SectionDark>
+
+  <section class="mt-16 grid items-center gap-12 lg:grid-cols-2">
+    <div class="space-y-8">
+      <h2 class="font-display text-3xl font-bold md:text-4xl">Detalles del torneo</h2>
+      <InfoRow title="Cuándo">
+        <p class="capitalize">{eventDate}</p>
+        <p>
+          {tournament?.eventTimeStart ?? '15:00'} – {tournament?.eventTimeEnd ?? '20:00'}
+        </p>
+      </InfoRow>
+      <InfoRow title="Dónde">
+        <p>{tournament?.venue ?? 'Curicó — lugar por confirmar'}</p>
+      </InfoRow>
+      <InfoRow title="Formato">
+        <p>Varias rondas · control {tournament?.timeControl ?? '10+5'}</p>
+        {
+          stats && (
+            <p class="mt-1 font-semibold text-ink">
+              {stats.registered} jugadores inscritos
+            </p>
+          )
+        }
+      </InfoRow>
+    </div>
+    <div class="flex justify-center">
+      <img
+        src="/images/chess/board-angle.svg"
+        alt="Tablero de ajedrez"
+        width="400"
+        height="320"
+        loading="lazy"
+        decoding="async"
+        class="max-w-full drop-shadow-2xl"
+      />
+    </div>
+  </section>
+
+  <section class="mt-16">
+    <h2 class="font-display mb-8 text-center text-3xl font-bold">¿Cómo será el día?</h2>
+    <ol class="grid gap-4 md:grid-cols-3">
+      <li class="card-light p-6 shadow-sm">
+        <span class="num-badge mb-4">01</span>
+        <p class="font-display text-lg font-bold">Llegas y te registramos</p>
+        <p class="mt-2 text-sm text-muted">Check-in al llegar al local</p>
+      </li>
+      <li class="card-light p-6 shadow-sm">
+        <span class="num-badge mb-4">02</span>
+        <p class="font-display text-lg font-bold">Juegas varias rondas</p>
+        <p class="mt-2 text-sm text-muted">Partidas en paralelo, todos compiten</p>
+      </li>
+      <li class="card-light p-6 shadow-sm">
+        <span class="num-badge mb-4">03</span>
+        <p class="font-display text-lg font-bold">Tabla final</p>
+        <p class="mt-2 text-sm text-muted">Clasificación visible en vivo</p>
+      </li>
+    </ol>
+  </section>
+</BaseLayout>

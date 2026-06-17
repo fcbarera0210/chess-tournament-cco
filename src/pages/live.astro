@@ -1,0 +1,8 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { LiveView } from '../components/react/LiveView';
+---
+
+<BaseLayout title="Live — Chess Tournament Curicó" wide={true}>
+  <LiveView client:load mode="live" />
+</BaseLayout>
