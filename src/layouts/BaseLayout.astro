@@ -3,6 +3,7 @@ import '../styles/global.css';
 import SiteFooter from '../components/astro/SiteFooter.astro';
 import FloatingPiecesBackground from '../components/astro/FloatingPiecesBackground.astro';
 import { MobileNav } from '../components/react/MobileNav';
+import { getActiveTournament } from '../lib/tournament';
 
 interface Props {
   title?: string;
@@ -12,8 +13,11 @@ interface Props {
   dark?: boolean;
 }
 
+const tournament = await getActiveTournament();
+const tournamentName = tournament?.name ?? 'Chess Tournament Curicó';
+
 const {
-  title = 'Chess Tournament Curicó',
+  title = tournamentName,
   description = 'Torneo de ajedrez abierto en Curicó. Inscripción gratuita.',
   wide = false,
   kiosk = false,
@@ -53,7 +57,7 @@ const {
               <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-sm text-white">
                 ♞
               </span>
-              Curicó Chess
+              {tournamentName}
             </a>
             <div class="flex items-center gap-4 text-sm font-medium">
               <div class="hidden items-center gap-4 sm:flex">
@@ -83,7 +87,7 @@ const {
     >
       <slot />
     </main>
-    {!kiosk && <SiteFooter />}
+    {!kiosk && <SiteFooter tournamentName={tournamentName} />}
   </body>
 </html>
 
