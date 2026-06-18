@@ -212,9 +212,17 @@ export const POST: APIRoute = async ({ request }) =>
       const roundGames = await getGamesForRound(roundId);
       const pending = roundGames.filter((g) => g.result === 'pending' && !g.isBye);
       if (pending.length > 0) {
-        return new Response(JSON.stringify({ error: 'Hay partidas sin resultado' }), {
-          status: 400,
-        });
+        const boards = pending
+          .map((g) => g.boardNumber)
+          .sort((a, b) => a - b)
+          .join(', ');
+        const mesaLabel = pending.length === 1 ? 'mesa' : 'mesas';
+        return new Response(
+          JSON.stringify({
+            error: `No se puede cerrar la ronda: faltan resultados en ${pending.length} partida(s) (${mesaLabel} ${boards})`,
+          }),
+          { status: 400 },
+        );
       }
 
       const [completed] = await db

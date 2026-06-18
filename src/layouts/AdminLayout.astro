@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import { AdminSignOut } from '../components/react/AdminSignOut';
 import { AdminMobileNav } from '../components/react/AdminMobileNav';
+import { AdminToastHost } from '../components/react/AdminToastHost';
 
 const pathname = Astro.url.pathname;
 
@@ -50,5 +51,6 @@ function navClass(href: string) {
     <main class="mx-auto max-w-7xl px-4 py-8">
       <slot />
     </main>
+    <AdminToastHost client:load />
   </body>
 </html>

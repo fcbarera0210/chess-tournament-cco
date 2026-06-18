@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AdminButton } from './AdminButton';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
+import { showAdminToast } from '../../lib/admin-toast';
 
 type Player = { id: string; name: string; status: string };
 
@@ -91,7 +92,6 @@ export function RoundManager({ roundNumber }: Props) {
   const [pairings, setPairings] = useState<Pairing[]>([]);
   const [isEditingPairings, setIsEditingPairings] = useState(false);
   const [pairingWarnings, setPairingWarnings] = useState<string[]>([]);
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const { run, isLoading } = useAsyncAction();
 
@@ -132,20 +132,17 @@ export function RoundManager({ roundNumber }: Props) {
   function startEditing() {
     setPairings(gamesToPairings(games));
     setIsEditingPairings(true);
-    setMessage('');
   }
 
   function cancelEditing() {
     setIsEditingPairings(false);
     setPairings([]);
     setPairingWarnings([]);
-    setMessage('');
   }
 
   async function generatePairings() {
     if (!round) return;
     await run('generate', async () => {
-      setMessage('');
       setPairingWarnings([]);
       const res = await fetch('/api/rounds', {
         method: 'POST',
@@ -154,7 +151,7 @@ export function RoundManager({ roundNumber }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setMessage(data.error ?? 'Error al generar emparejamientos');
+        showAdminToast(data.error ?? 'Error al generar emparejamientos', 'error');
         return;
       }
 
@@ -207,13 +204,13 @@ export function RoundManager({ roundNumber }: Props) {
         }),
       });
       if (res.ok) {
-        setMessage('Emparejamientos guardados');
+        showAdminToast('Emparejamientos guardados', 'success');
         setIsEditingPairings(false);
         setPairings([]);
         await load();
       } else {
         const d = await res.json();
-        setMessage(d.error ?? 'Error');
+        showAdminToast(d.error ?? 'Error al guardar emparejamientos', 'error');
       }
     });
   }
@@ -227,10 +224,11 @@ export function RoundManager({ roundNumber }: Props) {
         body: JSON.stringify({ action: 'activate_round', roundId: round.id }),
       });
       if (res.ok) {
+        showAdminToast('Ronda activada', 'success');
         await load();
       } else {
         const d = await res.json();
-        setMessage(d.error ?? 'Error');
+        showAdminToast(d.error ?? 'Error al activar la ronda', 'error');
       }
     });
   }
@@ -244,10 +242,9 @@ export function RoundManager({ roundNumber }: Props) {
       });
       if (!res.ok) {
         const data = await res.json();
-        setMessage(data.error ?? 'Error al registrar resultado');
+        showAdminToast(data.error ?? 'Error al registrar resultado', 'error');
         return;
       }
-      setMessage('');
       await load();
     });
   }
@@ -261,11 +258,11 @@ export function RoundManager({ roundNumber }: Props) {
         body: JSON.stringify({ action: 'complete_round', roundId: round.id }),
       });
       if (res.ok) {
-        setMessage('Ronda completada');
+        showAdminToast('Ronda completada', 'success');
         await load();
       } else {
         const d = await res.json();
-        setMessage(d.error ?? 'Error');
+        showAdminToast(d.error ?? 'No se pudo cerrar la ronda', 'error');
       }
     });
   }
@@ -297,22 +294,6 @@ export function RoundManager({ roundNumber }: Props) {
           ({statusLabel[round.status] ?? round.status})
         </span>
       </h1>
-
-      {message && (
-        <p
-          className={`text-sm ${
-            message.includes('Error') ||
-            message.includes('Falta') ||
-            message.includes('debe') ||
-            message.includes('Solo') ||
-            message.includes('inválid')
-              ? 'text-red-600'
-              : 'text-finished'
-          }`}
-        >
-          {message}
-        </p>
-      )}
 
       {showDraftSummary && (
         <div className="space-y-3">
