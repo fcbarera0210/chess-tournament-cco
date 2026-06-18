@@ -1,0 +1,161 @@
+---
+import { CHESS_SVG_SIZE, chessSvgSrc, type ChessSvgName } from '../../lib/chess-svg-sizes';
+
+type Piece = {
+  name: ChessSvgName;
+  speed: number;
+  wrapperClass: string;
+  innerClass?: string;
+  imgClass: string;
+};
+
+const blur = 'blur-[2px] md:blur-[3px]';
+
+const pieces: Piece[] = [
+  {
+    name: 'b-queen',
+    speed: 0.1,
+    wrapperClass: 'absolute -left-2 top-16 md:-left-6 md:top-20',
+    imgClass: `float-piece ${blur} h-44 w-auto opacity-[0.28] md:h-56`,
+  },
+  {
+    name: 'w-knight-front',
+    speed: 0.24,
+    wrapperClass: 'absolute -right-2 top-24 md:right-0 md:top-28',
+    imgClass: `float-piece-delayed ${blur} h-40 w-auto opacity-[0.26] md:h-52`,
+  },
+  {
+    name: 'w-pawn',
+    speed: 0.16,
+    wrapperClass: 'absolute left-[8%] top-8 md:left-[12%] md:top-12',
+    imgClass: `float-piece ${blur} h-28 w-auto opacity-[0.22] md:h-36`,
+  },
+  {
+    name: 'w-king',
+    speed: 0.2,
+    wrapperClass: 'absolute right-[10%] bottom-24 md:right-[12%] md:bottom-32',
+    imgClass: `float-piece-delayed ${blur} h-44 w-auto opacity-[0.27] md:h-56`,
+  },
+  {
+    name: 'b-pawn',
+    speed: 0.28,
+    wrapperClass: 'absolute bottom-20 left-4 md:bottom-28 md:left-8',
+    imgClass: `float-piece ${blur} h-32 w-auto opacity-[0.24] md:h-40`,
+  },
+  {
+    name: 'w-queen',
+    speed: 0.14,
+    wrapperClass: 'absolute right-6 bottom-[22%] md:right-10',
+    imgClass: `float-piece-delayed ${blur} h-40 w-auto opacity-[0.25] md:h-48`,
+  },
+  {
+    name: 'b-king',
+    speed: 0.08,
+    wrapperClass: 'absolute top-[10%] left-1/2',
+    innerClass: '-translate-x-1/2',
+    imgClass: `float-piece ${blur} h-36 w-auto opacity-[0.2] md:h-48`,
+  },
+  {
+    name: 'w-bishop',
+    speed: 0.22,
+    wrapperClass: 'absolute top-[42%] left-1/2',
+    innerClass: '-translate-x-[120%]',
+    imgClass: `float-piece-delayed ${blur} h-36 w-auto opacity-[0.22] md:h-44`,
+  },
+  {
+    name: 'b-rook',
+    speed: 0.18,
+    wrapperClass: 'absolute top-[48%] left-1/2',
+    innerClass: 'translate-x-[20%]',
+    imgClass: `float-piece ${blur} h-32 w-auto opacity-[0.24] md:h-40`,
+  },
+  {
+    name: 'w-knight-front',
+    speed: 0.3,
+    wrapperClass: 'absolute top-[68%] left-1/2',
+    innerClass: '-translate-x-1/2',
+    imgClass: `float-piece-delayed ${blur} h-36 w-auto opacity-[0.21] md:h-44`,
+  },
+  {
+    name: 'b-queen',
+    speed: 0.12,
+    wrapperClass: 'absolute top-[32%] right-[6%] hidden md:block md:right-[10%]',
+    imgClass: `float-piece ${blur} h-32 w-auto opacity-[0.2] md:h-40`,
+  },
+  {
+    name: 'w-pawn',
+    speed: 0.26,
+    wrapperClass: 'absolute top-[58%] left-[6%] md:left-[10%]',
+    imgClass: `float-piece-delayed ${blur} h-28 w-auto opacity-[0.22] md:h-36`,
+  },
+];
+---
+
+<div class="site-floating-pieces pointer-events-none" aria-hidden="true">
+  {
+    pieces.map((piece, i) => {
+      const size = CHESS_SVG_SIZE[piece.name];
+      return (
+        <div class={piece.wrapperClass} data-parallax-speed={piece.speed}>
+          <div class={piece.innerClass ?? undefined}>
+            <img
+              src={chessSvgSrc(piece.name)}
+              alt=""
+              width={size.width}
+              height={size.height}
+              loading={i < 3 ? 'eager' : 'lazy'}
+              decoding="async"
+              class={piece.imgClass}
+            />
+          </div>
+        </div>
+      );
+    })
+  }
+</div>
+
+<script is:inline>
+  (function () {
+    var scrollHandler = null;
+
+    function initFloatingParallax() {
+      var layers = document.querySelectorAll('.site-floating-pieces [data-parallax-speed]');
+      if (!layers.length) return;
+
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function update() {
+        var y = window.scrollY;
+        layers.forEach(function (el) {
+          if (reduce) {
+            el.style.transform = '';
+            return;
+          }
+          var speed = parseFloat(el.getAttribute('data-parallax-speed') || '0');
+          el.style.transform = 'translate3d(0, ' + y * speed + 'px, 0)';
+        });
+      }
+
+      if (scrollHandler) {
+        window.removeEventListener('scroll', scrollHandler);
+      }
+
+      var ticking = false;
+      scrollHandler = function () {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(function () {
+            update();
+            ticking = false;
+          });
+        }
+      };
+
+      window.addEventListener('scroll', scrollHandler, { passive: true });
+      update();
+    }
+
+    initFloatingParallax();
+    document.addEventListener('astro:page-load', initFloatingParallax);
+  })();
+</script>

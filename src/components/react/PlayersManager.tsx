@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { AdminButton } from './AdminButton';
+import { useAsyncAction } from '../../hooks/useAsyncAction';
 
 type Player = {
   id: string;
@@ -13,6 +15,7 @@ export function PlayersManager() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const { run, isLoading } = useAsyncAction();
 
   async function load() {
     const res = await fetch('/api/players');
@@ -26,21 +29,25 @@ export function PlayersManager() {
   }, []);
 
   async function updateStatus(playerId: string, status: string) {
-    await fetch('/api/players', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playerId, status }),
+    await run(`status:${playerId}:${status}`, async () => {
+      await fetch('/api/players', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId, status }),
+      });
+      await load();
     });
-    load();
   }
 
   async function promote(playerId: string) {
-    await fetch('/api/players', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playerId, promoteFromWaitlist: true }),
+    await run(`promote:${playerId}`, async () => {
+      await fetch('/api/players', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId, promoteFromWaitlist: true }),
+      });
+      await load();
     });
-    load();
   }
 
   const filtered = players.filter((p) => {
@@ -96,40 +103,43 @@ export function PlayersManager() {
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {p.status !== 'checked_in' && p.status !== 'withdrawn' && (
-                <button
-                  type="button"
+                <AdminButton
+                  className="px-3 py-2 text-sm"
+                  loading={isLoading(`status:${p.id}:checked_in`)}
                   onClick={() => updateStatus(p.id, 'checked_in')}
-                  className="admin-btn admin-btn-primary px-3 py-2 text-sm"
                 >
                   Check-in
-                </button>
+                </AdminButton>
               )}
               {p.status === 'checked_in' && (
-                <button
-                  type="button"
+                <AdminButton
+                  variant="secondary"
+                  className="px-3 py-2 text-sm"
+                  loading={isLoading(`status:${p.id}:registered`)}
                   onClick={() => updateStatus(p.id, 'registered')}
-                  className="admin-btn admin-btn-secondary px-3 py-2 text-sm"
                 >
                   Quitar check-in
-                </button>
+                </AdminButton>
               )}
               {p.status === 'waitlist' && (
-                <button
-                  type="button"
+                <AdminButton
+                  variant="secondary"
+                  className="px-3 py-2 text-sm"
+                  loading={isLoading(`promote:${p.id}`)}
                   onClick={() => promote(p.id)}
-                  className="admin-btn admin-btn-secondary px-3 py-2 text-sm"
                 >
                   Promover a inscrito
-                </button>
+                </AdminButton>
               )}
               {p.status !== 'withdrawn' && (
-                <button
-                  type="button"
+                <AdminButton
+                  variant="ghost"
+                  className="px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                  loading={isLoading(`status:${p.id}:withdrawn`)}
                   onClick={() => updateStatus(p.id, 'withdrawn')}
-                  className="admin-btn px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                 >
                   Retirar
-                </button>
+                </AdminButton>
               )}
             </div>
           </div>

@@ -3,36 +3,82 @@ interface Props {
   number: string;
   title: string;
   variant?: 'light' | 'dark';
+  desktopVariant?: 'light' | 'dark';
   image?: string;
+  desktopImage?: string;
   imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  desktopImageWidth?: number;
+  desktopImageHeight?: number;
 }
 
-const { number, title, variant = 'light', image, imageAlt = '' } = Astro.props;
-const isDark = variant === 'dark';
+const {
+  number,
+  title,
+  variant = 'light',
+  desktopVariant,
+  image,
+  desktopImage,
+  imageAlt = '',
+  imageWidth,
+  imageHeight,
+  desktopImageWidth,
+  desktopImageHeight,
+} = Astro.props;
+
+const mobileDark = variant === 'dark';
+const responsiveSurface = desktopVariant != null;
+
+const surfaceClasses = responsiveSurface
+  ? mobileDark
+    ? 'bg-[var(--color-dark-card)] text-white sm:bg-[var(--color-surface)] sm:text-[var(--color-ink)]'
+    : 'bg-[var(--color-surface)] text-[var(--color-ink)] sm:bg-[var(--color-dark-card)] sm:text-white'
+  : mobileDark
+    ? 'card-dark'
+    : 'card-light';
 ---
 
 <div
   class:list={[
-    'relative flex min-h-[200px] flex-col justify-between overflow-hidden rounded-3xl p-6 md:min-h-[240px] md:p-8',
-    isDark ? 'card-dark' : 'card-light',
+    'relative flex min-h-[200px] flex-col overflow-hidden rounded-3xl p-6 md:min-h-[240px] md:p-8',
+    surfaceClasses,
   ]}
 >
-  <span class="num-badge mb-4 w-fit">{number}</span>
-  <h3 class="font-display max-w-[80%] text-xl font-bold leading-snug md:text-2xl">
-    {title}
-  </h3>
-  {
-    image && (
-      <img
-        src={image}
-        alt={imageAlt}
-        width="80"
-        height="80"
-        loading="lazy"
-        decoding="async"
-        class="absolute bottom-4 right-4 h-16 w-auto max-w-[5rem] object-contain opacity-90 md:h-20 md:max-w-[6rem]"
-      />
-    )
-  }
+  <div class="relative flex min-h-0 flex-1 flex-col justify-between">
+    {
+      image && (
+        <img
+          src={image}
+          alt={imageAlt}
+          width={imageWidth ?? 22}
+          height={imageHeight ?? 62}
+          loading="lazy"
+          decoding="async"
+          class:list={[
+            'pointer-events-none absolute top-0 right-0 bottom-0 h-full w-auto max-w-[45%] object-contain object-right opacity-90',
+            desktopImage && 'sm:hidden',
+          ]}
+        />
+      )
+    }
+    {
+      desktopImage && (
+        <img
+          src={desktopImage}
+          alt={imageAlt}
+          width={desktopImageWidth ?? imageWidth ?? 22}
+          height={desktopImageHeight ?? imageHeight ?? 62}
+          loading="lazy"
+          decoding="async"
+          class="pointer-events-none absolute top-0 right-0 bottom-0 hidden h-full w-auto max-w-[45%] object-contain object-right opacity-90 sm:block"
+        />
+      )
+    }
+    <span class="relative z-10 num-badge w-fit">{number}</span>
+    <h3 class="relative z-10 font-display max-w-[80%] text-xl font-bold leading-snug md:text-2xl">
+      {title}
+    </h3>
+  </div>
   <slot />
 </div>

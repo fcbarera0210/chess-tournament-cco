@@ -1,26 +1,22 @@
 /**
- * Decorative floating chess pieces wrapper.
- * Respects prefers-reduced-motion via CSS in global.css (.float-piece).
+ * Decorative floating chess pieces (optional wrapper).
+ * Site-wide background uses FloatingPiecesBackground.astro in BaseLayout.
  */
+import { CHESS_SVG_SIZE, chessSvgSrc, type ChessSvgName } from '../../lib/chess-svg-sizes';
+
 type Piece = {
-  src: string;
+  name: ChessSvgName;
   className?: string;
-  width?: number;
-  height?: number;
 };
 
 const defaultPieces: Piece[] = [
   {
-    src: '/images/chess/b-queen.svg',
+    name: 'b-queen',
     className: 'float-piece absolute -left-4 top-8 h-24 w-auto md:h-32',
-    width: 124,
-    height: 125,
   },
   {
-    src: '/images/chess/w-knight-front.svg',
-    className: 'float-piece-delayed absolute right-4 top-12 h-20 w-auto blur-[1px] md:h-28',
-    width: 105,
-    height: 96,
+    name: 'w-knight-front',
+    className: 'float-piece-delayed absolute right-4 top-12 h-20 w-auto md:h-28',
   },
 ];
 
@@ -31,19 +27,22 @@ type Props = {
 export function FloatingPieces({ pieces = defaultPieces }: Props) {
   return (
     <>
-      {pieces.map((p) => (
-        <img
-          key={p.src}
-          src={p.src}
-          alt=""
-          width={p.width ?? 80}
-          height={p.height ?? 80}
-          loading="lazy"
-          decoding="async"
-          className={`pointer-events-none opacity-90 ${p.className ?? ''}`}
-          aria-hidden
-        />
-      ))}
+      {pieces.map((p) => {
+        const size = CHESS_SVG_SIZE[p.name];
+        return (
+          <img
+            key={p.name}
+            src={chessSvgSrc(p.name)}
+            alt=""
+            width={size.width}
+            height={size.height}
+            loading="lazy"
+            decoding="async"
+            className={`pointer-events-none opacity-90 ${p.className ?? ''}`}
+            aria-hidden
+          />
+        );
+      })}
     </>
   );
 }

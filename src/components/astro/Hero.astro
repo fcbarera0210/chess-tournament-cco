@@ -1,56 +1,18 @@
 ---
 import PillButton from './PillButton.astro';
 import { SpotsCounter } from '../react/SpotsCounter';
+
+interface Props {
+  tournamentName?: string;
+}
+
+const { tournamentName = 'Chess Tournament Curicó' } = Astro.props;
 ---
 
 <section class="hero-texture relative overflow-hidden rounded-3xl px-6 py-20 md:px-12 md:py-28">
-  <img
-    src="/images/chess/b-queen.svg"
-    alt=""
-    width="124"
-    height="125"
-    loading="eager"
-    decoding="async"
-    class="float-piece pointer-events-none absolute -left-2 top-6 h-28 w-auto opacity-95 md:-left-4 md:top-8 md:h-36"
-    aria-hidden="true"
-  />
-  <img
-    src="/images/chess/w-knight-front.svg"
-    alt=""
-    width="105"
-    height="96"
-    loading="eager"
-    decoding="async"
-    class="float-piece-delayed pointer-events-none absolute right-0 top-10 h-24 w-auto blur-[0.5px] md:right-4 md:top-12 md:h-32"
-    aria-hidden="true"
-  />
-  <img
-    src="/images/chess/w-pawn.svg"
-    alt=""
-    width="62"
-    height="62"
-    loading="lazy"
-    decoding="async"
-    class="pointer-events-none absolute left-1/3 top-2 h-14 w-auto opacity-50 blur-[1px] md:h-16"
-    aria-hidden="true"
-  />
-  <img
-    src="/images/chess/w-king.svg"
-    alt=""
-    width="124"
-    height="125"
-    loading="lazy"
-    decoding="async"
-    class="float-piece pointer-events-none absolute -bottom-2 right-[20%] h-24 w-auto opacity-90 md:-bottom-4 md:h-28"
-    aria-hidden="true"
-  />
-
   <div class="relative z-10 mx-auto max-w-3xl text-center">
-    <p class="mb-4 text-sm font-semibold uppercase tracking-widest text-muted">
-      Primera juntada abierta · Curicó
-    </p>
     <h1 class="font-display text-4xl font-extrabold leading-tight tracking-tight md:text-6xl lg:text-7xl">
-      Chess Tournament Curicó
+      {tournamentName}
     </h1>
     <p class="mx-auto mt-6 max-w-xl text-lg text-muted md:text-xl">
       Torneo casual de ajedrez. Inscripción gratuita, todos los niveles bienvenidos.
@@ -62,8 +24,5 @@ import { SpotsCounter } from '../react/SpotsCounter';
       <PillButton href="/inscripcion">Inscribirme</PillButton>
       <PillButton href="/clasificacion" variant="outline">Clasificación</PillButton>
     </div>
-    <p class="mt-10 font-display text-2xl font-bold tracking-[0.3em] text-ink/20 md:text-4xl">
-      ONLINE
-    </p>
   </div>
 </section>

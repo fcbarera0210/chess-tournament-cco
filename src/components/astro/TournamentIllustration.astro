@@ -1,0 +1,17 @@
+---
+import { CHESS_SVG_SIZE } from '../../lib/chess-svg-sizes';
+
+const chessSet = CHESS_SVG_SIZE['chess-set'];
+---
+
+<div class="mx-auto w-full max-w-lg">
+  <img
+    src="/images/chess/chess-set.svg"
+    alt="Tablero de ajedrez cerrado con reloj y piezas"
+    width={chessSet.width}
+    height={chessSet.height}
+    loading="lazy"
+    decoding="async"
+    class="w-full"
+  />
+</div>

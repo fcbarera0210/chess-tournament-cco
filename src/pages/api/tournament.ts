@@ -30,12 +30,18 @@ export const PATCH: APIRoute = async ({ request }) =>
 
     if (body.name) updates.name = body.name.trim();
     if (body.venue) updates.venue = body.venue.trim();
+    if (body.eventDate) updates.eventDate = body.eventDate;
     if (body.eventTimeStart) updates.eventTimeStart = body.eventTimeStart;
     if (body.eventTimeEnd) updates.eventTimeEnd = body.eventTimeEnd;
     if (body.timeControl) updates.timeControl = body.timeControl;
     if (typeof body.maxPlayers === 'number') updates.maxPlayers = body.maxPlayers;
     if (typeof body.plannedRounds === 'number') updates.plannedRounds = body.plannedRounds;
     if (typeof body.waitlistEnabled === 'boolean') updates.waitlistEnabled = body.waitlistEnabled;
+
+    if (body.venueMapsUrl !== undefined) {
+      const url = typeof body.venueMapsUrl === 'string' ? body.venueMapsUrl.trim() : '';
+      updates.venueMapsUrl = url || null;
+    }
 
     if (body.format && canEditFormat(tournament)) {
       if (body.format === 'swiss' || body.format === 'knockout') {

@@ -8,9 +8,55 @@ import {
 import { computeStandings, formatResult } from '../../lib/standings';
 import { db } from '../../lib/db';
 import { rounds } from '../../lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 
 export const prerender = false;
+
+type RecentResult = {
+  id: string;
+  boardNumber: number;
+  result: string;
+  whiteName: string | null;
+  blackName: string | null;
+  isBye: boolean;
+  label: string;
+};
+
+async function getPreviousRoundResults(tournamentId: string, currentRoundNumber: number) {
+  if (currentRoundNumber <= 1) {
+    return { results: [] as RecentResult[], roundNumber: null as number | null };
+  }
+
+  const [prevRound] = await db
+    .select()
+    .from(rounds)
+    .where(
+      and(
+        eq(rounds.tournamentId, tournamentId),
+        eq(rounds.roundNumber, currentRoundNumber - 1),
+      ),
+    )
+    .limit(1);
+
+  if (!prevRound) {
+    return { results: [] as RecentResult[], roundNumber: null as number | null };
+  }
+
+  const prevGames = await getGamesForRound(prevRound.id);
+  const results = prevGames
+    .filter((g) => g.result !== 'pending')
+    .map((g) => ({
+      id: g.id,
+      boardNumber: g.boardNumber,
+      result: g.result,
+      whiteName: g.whiteName,
+      blackName: g.blackName,
+      isBye: g.isBye,
+      label: formatResult(g.result, g.whiteName, g.blackName),
+    }));
+
+  return { results, roundNumber: prevRound.roundNumber };
+}
 
 export const GET: APIRoute = async () => {
   const tournament = await getActiveTournament();
@@ -24,17 +70,17 @@ export const GET: APIRoute = async () => {
 
   let roundData = null;
   let games: Awaited<ReturnType<typeof getGamesForRound>> = [];
-  let recentResults: string[] = [];
+  let recentResults: RecentResult[] = [];
+  let recentResultsRoundNumber: number | null = null;
 
   if (activeRound) {
     games = await getGamesForRound(activeRound.id);
     const finished = games.filter((g) => g.result !== 'pending');
     const pending = games.filter((g) => g.result === 'pending');
 
-    recentResults = finished
-      .slice(-5)
-      .reverse()
-      .map((g) => `M${g.boardNumber}: ${formatResult(g.result, g.whiteName, g.blackName)}`);
+    const previous = await getPreviousRoundResults(tournament.id, activeRound.roundNumber);
+    recentResults = previous.results;
+    recentResultsRoundNumber = previous.roundNumber;
 
     roundData = {
       id: activeRound.id,
@@ -54,6 +100,11 @@ export const GET: APIRoute = async () => {
 
     if (lastRound) {
       games = await getGamesForRound(lastRound.id);
+
+      const previous = await getPreviousRoundResults(tournament.id, lastRound.roundNumber);
+      recentResults = previous.results;
+      recentResultsRoundNumber = previous.roundNumber;
+
       roundData = {
         id: lastRound.id,
         roundNumber: lastRound.roundNumber,
@@ -72,6 +123,10 @@ export const GET: APIRoute = async () => {
         status: tournament.status,
         format: tournament.format,
         plannedRounds: tournament.plannedRounds,
+        timeControl: tournament.timeControl,
+        venue: tournament.venue,
+        eventTimeStart: tournament.eventTimeStart,
+        eventTimeEnd: tournament.eventTimeEnd,
       },
       stats,
       round: roundData,
@@ -85,6 +140,7 @@ export const GET: APIRoute = async () => {
       })),
       standingsTop: standings.slice(0, 5),
       recentResults,
+      recentResultsRoundNumber,
     }),
     { headers: { 'Content-Type': 'application/json' } },
   );

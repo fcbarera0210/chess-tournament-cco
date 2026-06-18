@@ -1,6 +1,8 @@
 ---
 import '../styles/global.css';
 import SiteFooter from '../components/astro/SiteFooter.astro';
+import FloatingPiecesBackground from '../components/astro/FloatingPiecesBackground.astro';
+import { MobileNav } from '../components/react/MobileNav';
 
 interface Props {
   title?: string;
@@ -38,10 +40,11 @@ const {
   <body
     class:list={[
       !kiosk && 'flex flex-col',
-      kiosk ? 'bg-dark text-white' : dark ? 'bg-dark text-white' : 'bg-bg text-ink',
+      kiosk ? 'bg-bg text-ink' : dark ? 'bg-dark text-white' : 'bg-bg text-ink',
       !kiosk ? 'min-h-dvh' : 'min-h-screen',
     ]}
   >
+    <FloatingPiecesBackground />
     {
       !kiosk && (
         <header class="sticky top-0 z-50 border-b border-border bg-surface/95 backdrop-blur">
@@ -53,15 +56,18 @@ const {
               Curicó Chess
             </a>
             <div class="flex items-center gap-4 text-sm font-medium">
-              <a href="/clasificacion" class="hidden text-muted hover:text-ink sm:inline">
-                Clasificación
-              </a>
-              <a href="/live" class="hidden text-muted hover:text-ink sm:inline">
-                Live
-              </a>
-              <a href="/inscripcion" class="btn-pill btn-pill-primary px-4 py-2 text-sm">
-                Inscribirme
-              </a>
+              <div class="hidden items-center gap-4 sm:flex">
+                <a href="/clasificacion" class="text-muted hover:text-ink">
+                  Clasificación
+                </a>
+                <a href="/live" class="text-muted hover:text-ink">
+                  Live
+                </a>
+                <a href="/inscripcion" class="btn-pill btn-pill-primary px-4 py-2 text-sm">
+                  Inscribirme
+                </a>
+              </div>
+              <MobileNav client:load />
             </div>
           </nav>
         </header>
@@ -69,10 +75,10 @@ const {
     }
     <main
       class:list={[
-        'mx-auto w-full',
+        'relative z-10 mx-auto w-full',
         !kiosk && 'flex-1',
         wide || kiosk ? 'max-w-7xl' : 'max-w-6xl',
-        kiosk ? 'px-4 py-6' : 'px-4 py-8',
+        kiosk ? 'px-4 py-4 md:px-6 md:py-6' : 'px-4 py-8',
       ]}
     >
       <slot />

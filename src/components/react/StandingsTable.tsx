@@ -8,6 +8,7 @@ type Standing = {
   wins: number;
   draws: number;
   losses: number;
+  buchholzCut1: number;
 };
 
 type StandingsData = {
@@ -86,6 +87,12 @@ export function StandingsTable() {
             <th className="px-5 py-4 font-display font-bold">#</th>
             <th className="px-5 py-4 font-display font-bold">Jugador</th>
             <th className="px-5 py-4 text-center font-display font-bold">Pts</th>
+            <th
+              className="hidden px-5 py-4 text-center font-semibold md:table-cell"
+              title="Buchholz Cut 1 (desempate)"
+            >
+              BH
+            </th>
             <th className="hidden px-5 py-4 text-center font-semibold sm:table-cell">PJ</th>
             <th className="hidden px-5 py-4 text-center font-semibold md:table-cell">G</th>
             <th className="hidden px-5 py-4 text-center font-semibold md:table-cell">E</th>
@@ -101,6 +108,7 @@ export function StandingsTable() {
               <td className="px-5 py-4 font-display font-bold text-muted">{i + 1}</td>
               <td className="px-5 py-4 font-semibold">{s.name}</td>
               <td className="px-5 py-4 text-center font-display text-lg font-bold">{s.points}</td>
+              <td className="hidden px-5 py-4 text-center md:table-cell">{s.buchholzCut1}</td>
               <td className="hidden px-5 py-4 text-center sm:table-cell">{s.gamesPlayed}</td>
               <td className="hidden px-5 py-4 text-center md:table-cell">{s.wins}</td>
               <td className="hidden px-5 py-4 text-center md:table-cell">{s.draws}</td>

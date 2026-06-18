@@ -36,7 +36,8 @@ html {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  .float-piece {
+  .float-piece,
+  .float-piece-delayed {
     animation: none !important;
   }
 }
@@ -70,6 +71,30 @@ h3,
   background-color: var(--color-dark-card);
   border-radius: 1.25rem;
   color: #ffffff;
+}
+
+.kiosk-shell {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background-color: var(--color-dark);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+}
+
+.kiosk-panel {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: var(--color-dark-card);
+}
+
+.kiosk-card-light {
+  border-radius: 1.25rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
 }
 
 .btn-pill {
@@ -143,7 +168,7 @@ h3,
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-12px);
+    transform: translateY(-16px);
   }
 }
 
@@ -153,6 +178,13 @@ h3,
 
 .float-piece-delayed {
   animation: float-gentle 7s ease-in-out 1s infinite;
+}
+
+.site-floating-pieces {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
 }
 
 /* Admin panel */
@@ -186,7 +218,12 @@ h3,
   border-radius: 0.75rem;
   padding: 0.625rem 1rem;
   font-weight: 600;
+  cursor: pointer;
   transition: opacity 0.2s, background-color 0.2s;
+}
+
+.admin-btn:disabled {
+  cursor: not-allowed;
 }
 
 .admin-btn-primary {
@@ -212,12 +249,31 @@ h3,
   background-color: var(--color-bg);
 }
 
+.admin-btn-danger {
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.admin-btn-danger:hover {
+  opacity: 0.9;
+}
+
+.admin-btn-danger:disabled {
+  opacity: 0.5;
+}
+
 .admin-chip {
   border-radius: 9999px;
   padding: 0.375rem 0.875rem;
   font-size: 0.875rem;
   font-weight: 500;
+  cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
+}
+
+.admin-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .admin-chip-active {
@@ -240,7 +296,13 @@ h3,
   font-size: 0.875rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
+}
+
+.admin-nav-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .admin-nav-link:hover {
@@ -258,4 +320,51 @@ h3,
   font-size: 1.875rem;
   font-weight: 700;
   line-height: 1;
+}
+
+@keyframes admin-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.admin-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: admin-spin 0.6s linear infinite;
+}
+
+.admin-link-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.admin-link-back:hover {
+  color: var(--color-ink);
+}
+
+@keyframes mobile-nav-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-nav-menu {
+  animation: mobile-nav-fade-in 0.22s ease-out both;
 }

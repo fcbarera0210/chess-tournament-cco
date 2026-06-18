@@ -1,14 +1,26 @@
 ---
 interface Props {
   title: string;
+  piece: string;
+  pieceWidth?: number;
+  pieceHeight?: number;
 }
 
-const { title } = Astro.props;
+const { title, piece, pieceWidth = 22, pieceHeight = 62 } = Astro.props;
 ---
 
 <div class="flex gap-4">
-  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink text-white">
-    <span class="text-sm">♚</span>
+  <div class="flex h-11 w-8 shrink-0 items-center justify-center">
+    <img
+      src={piece}
+      alt=""
+      width={pieceWidth}
+      height={pieceHeight}
+      loading="lazy"
+      decoding="async"
+      class="h-full w-auto max-w-full object-contain object-bottom"
+      aria-hidden="true"
+    />
   </div>
   <div>
     <h3 class="font-display text-lg font-bold">{title}</h3>

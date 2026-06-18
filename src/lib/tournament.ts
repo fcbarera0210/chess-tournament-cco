@@ -83,3 +83,27 @@ export function isRegistrationOpen(tournament: { status: string; maxPlayers: num
   if (tournament.status !== 'registration_open') return false;
   return registeredCount < tournament.maxPlayers;
 }
+
+export async function resetTournamentData(
+  tournamentId: string,
+  mode: 'rounds' | 'full',
+  currentStatus: string,
+) {
+  await db.delete(rounds).where(eq(rounds.tournamentId, tournamentId));
+
+  let newStatus: (typeof tournaments.$inferSelect)['status'] | undefined;
+
+  if (mode === 'full') {
+    await db.delete(players).where(eq(players.tournamentId, tournamentId));
+    newStatus = 'registration_open';
+  } else if (currentStatus === 'live' || currentStatus === 'finished') {
+    newStatus = 'registration_closed';
+  }
+
+  if (newStatus) {
+    await db
+      .update(tournaments)
+      .set({ status: newStatus })
+      .where(eq(tournaments.id, tournamentId));
+  }
+}

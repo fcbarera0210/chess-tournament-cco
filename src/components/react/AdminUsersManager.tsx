@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { AdminButton } from './AdminButton';
+import { useAsyncAction } from '../../hooks/useAsyncAction';
 
 type AdminUser = { id: string; username: string; createdAt: string };
 
@@ -12,6 +14,7 @@ export function AdminUsersManager() {
   const [passwordUserId, setPasswordUserId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [actionError, setActionError] = useState('');
+  const { run, isLoading } = useAsyncAction();
 
   async function load() {
     const res = await fetch('/api/admin/users');
@@ -33,37 +36,41 @@ export function AdminUsersManager() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     clearMessages();
-    const res = await fetch('/api/admin/users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+    await run('create', async () => {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? 'Error');
+        return;
+      }
+      setSuccess(`Usuario ${data.user.username} creado`);
+      setUsername('');
+      setPassword('');
+      await load();
     });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error ?? 'Error');
-      return;
-    }
-    setSuccess(`Usuario ${data.user.username} creado`);
-    setUsername('');
-    setPassword('');
-    load();
   }
 
   async function handlePasswordChange(userId: string) {
     clearMessages();
-    const res = await fetch('/api/admin/users', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, password: newPassword }),
+    await run(`password:${userId}`, async () => {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, password: newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionError(data.error ?? 'Error al cambiar contraseña');
+        return;
+      }
+      setSuccess('Contraseña actualizada');
+      setPasswordUserId(null);
+      setNewPassword('');
     });
-    const data = await res.json();
-    if (!res.ok) {
-      setActionError(data.error ?? 'Error al cambiar contraseña');
-      return;
-    }
-    setSuccess('Contraseña actualizada');
-    setPasswordUserId(null);
-    setNewPassword('');
   }
 
   async function handleDelete(user: AdminUser) {
@@ -76,22 +83,24 @@ export function AdminUsersManager() {
     }
 
     clearMessages();
-    const res = await fetch('/api/admin/users', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id }),
+    await run(`delete:${user.id}`, async () => {
+      const res = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionError(data.error ?? 'Error al eliminar');
+        return;
+      }
+      setSuccess(`Usuario ${user.username} eliminado`);
+      if (passwordUserId === user.id) {
+        setPasswordUserId(null);
+        setNewPassword('');
+      }
+      await load();
     });
-    const data = await res.json();
-    if (!res.ok) {
-      setActionError(data.error ?? 'Error al eliminar');
-      return;
-    }
-    setSuccess(`Usuario ${user.username} eliminado`);
-    if (passwordUserId === user.id) {
-      setPasswordUserId(null);
-      setNewPassword('');
-    }
-    load();
   }
 
   return (
@@ -125,26 +134,27 @@ export function AdminUsersManager() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
+                    <AdminButton
+                      variant="secondary"
+                      className="px-3 py-1.5 text-sm"
                       onClick={() => {
                         clearMessages();
                         setPasswordUserId(isEditingPassword ? null : u.id);
                         setNewPassword('');
                       }}
-                      className="admin-btn admin-btn-secondary px-3 py-1.5 text-sm"
                     >
                       {isEditingPassword ? 'Cancelar' : 'Contraseña'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(u)}
+                    </AdminButton>
+                    <AdminButton
+                      variant="ghost"
+                      className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
                       disabled={isSelf}
-                      className="admin-btn px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                      loading={isLoading(`delete:${u.id}`)}
+                      onClick={() => handleDelete(u)}
                       title={isSelf ? 'No puedes eliminar tu propia cuenta' : undefined}
                     >
                       Eliminar
-                    </button>
+                    </AdminButton>
                   </div>
                 </div>
 
@@ -166,12 +176,13 @@ export function AdminUsersManager() {
                       minLength={6}
                       autoComplete="new-password"
                     />
-                    <button
+                    <AdminButton
                       type="submit"
-                      className="admin-btn admin-btn-primary px-4 py-2 text-sm sm:shrink-0"
+                      className="px-4 py-2 text-sm sm:shrink-0"
+                      loading={isLoading(`password:${u.id}`)}
                     >
                       Guardar
-                    </button>
+                    </AdminButton>
                   </form>
                 )}
               </li>
@@ -204,9 +215,9 @@ export function AdminUsersManager() {
           minLength={6}
           autoComplete="new-password"
         />
-        <button type="submit" className="admin-btn admin-btn-primary w-full py-2.5">
+        <AdminButton type="submit" className="w-full py-2.5" loading={isLoading('create')}>
           Crear usuario
-        </button>
+        </AdminButton>
       </form>
     </div>
   );

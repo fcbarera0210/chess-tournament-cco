@@ -1,6 +1,7 @@
 ---
 import '../../styles/global.css';
 import { AdminLoginForm } from '../../components/react/AdminLoginForm';
+import { CHESS_SVG_SIZE } from '../../lib/chess-svg-sizes';
 
 export const prerender = false;
 
@@ -30,32 +31,32 @@ const authError = Astro.url.searchParams.get('error');
             <h1 class="font-display mt-8 text-3xl font-bold md:text-4xl">Organización</h1>
             <p class="mt-3 text-white/70">Panel de control del torneo · acceso restringido</p>
           </div>
-          <div class="mt-12 flex items-end justify-between gap-2 px-2">
+          <div class="mt-12 flex items-end justify-center gap-6 px-2 sm:gap-10">
             <img
               src="/images/chess/w-king.svg"
               alt=""
-              width="124"
-              height="125"
+              width={CHESS_SVG_SIZE['w-king'].width}
+              height={CHESS_SVG_SIZE['w-king'].height}
               loading="lazy"
-              class="h-16 w-auto"
+              class="h-16 w-auto shrink-0"
               aria-hidden="true"
             />
             <img
               src="/images/chess/b-pawn.svg"
               alt=""
-              width="62"
-              height="62"
+              width={CHESS_SVG_SIZE['b-pawn'].width}
+              height={CHESS_SVG_SIZE['b-pawn'].height}
               loading="lazy"
-              class="h-12 w-auto opacity-90"
+              class="h-12 w-auto shrink-0 opacity-90"
               aria-hidden="true"
             />
             <img
               src="/images/chess/w-queen.svg"
               alt=""
-              width="124"
-              height="125"
+              width={CHESS_SVG_SIZE['w-queen'].width}
+              height={CHESS_SVG_SIZE['w-queen'].height}
               loading="lazy"
-              class="h-20 w-auto"
+              class="h-20 w-auto shrink-0"
               aria-hidden="true"
             />
           </div>

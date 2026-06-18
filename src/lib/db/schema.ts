@@ -43,6 +43,7 @@ export const tournaments = pgTable('tournaments', {
   eventTimeStart: text('event_time_start').notNull().default('15:00'),
   eventTimeEnd: text('event_time_end').notNull().default('20:00'),
   venue: text('venue').notNull(),
+  venueMapsUrl: text('venue_maps_url'),
   format: tournamentFormatEnum('format').notNull().default('swiss'),
   maxPlayers: integer('max_players').notNull().default(20),
   plannedRounds: integer('planned_rounds').notNull().default(4),

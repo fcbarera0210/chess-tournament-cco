@@ -4,6 +4,9 @@ import { db } from '../../lib/db';
 import { rounds, games, players, tournaments } from '../../lib/db/schema';
 import { getActiveTournament, getGamesForRound } from '../../lib/tournament';
 import { withAdmin } from '../../lib/session';
+import { buildPairingContext, getCheckedInPlayerIds } from '../../lib/pairing-context';
+import { validatePairings } from '../../lib/pairing-validation';
+import { generateSwissPairings } from '../../lib/swiss-pairing';
 
 export const prerender = false;
 
@@ -102,10 +105,47 @@ export const POST: APIRoute = async ({ request }) =>
       });
     }
 
+    if (action === 'generate_pairings' && roundId) {
+      const [round] = await db.select().from(rounds).where(eq(rounds.id, roundId)).limit(1);
+      if (!round || round.status !== 'draft') {
+        return new Response(JSON.stringify({ error: 'Ronda no editable' }), { status: 400 });
+      }
+
+      if (tournament.format !== 'swiss') {
+        return new Response(JSON.stringify({ error: 'El pareo automático solo aplica a torneos suizos' }), {
+          status: 400,
+        });
+      }
+
+      const context = await buildPairingContext(tournament.id, round.roundNumber);
+      if (context.checkedInIds.length < 2) {
+        return new Response(JSON.stringify({ error: 'Se necesitan al menos 2 jugadores con check-in' }), {
+          status: 400,
+        });
+      }
+
+      const result = generateSwissPairings(context.players, round.roundNumber);
+
+      return new Response(
+        JSON.stringify({
+          pairings: result.pairings,
+          warnings: result.warnings,
+          byePlayerId: result.byePlayerId,
+        }),
+        { headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
     if (action === 'save_pairings' && roundId && Array.isArray(pairings)) {
       const [round] = await db.select().from(rounds).where(eq(rounds.id, roundId)).limit(1);
       if (!round || round.status !== 'draft') {
         return new Response(JSON.stringify({ error: 'Ronda no editable' }), { status: 400 });
+      }
+
+      const checkedInIds = await getCheckedInPlayerIds(tournament.id);
+      const validation = validatePairings(pairings, checkedInIds);
+      if (!validation.valid) {
+        return new Response(JSON.stringify({ error: validation.error }), { status: 400 });
       }
 
       await db.delete(games).where(eq(games.roundId, roundId));
