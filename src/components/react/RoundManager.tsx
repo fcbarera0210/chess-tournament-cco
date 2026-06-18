@@ -26,6 +26,29 @@ type Pairing = {
 
 type Props = { roundNumber: number };
 
+const RESULT_OPTIONS = [
+  { label: '1-0', result: 'white' },
+  { label: '½-½', result: 'draw' },
+  { label: '0-1', result: 'black' },
+] as const;
+
+function resultLabel(result: string, whiteName: string | null, blackName: string | null): string {
+  switch (result) {
+    case 'white':
+      return `${whiteName ?? 'Blancas'} ganó (1-0)`;
+    case 'black':
+      return `${blackName ?? 'Negras'} ganó (0-1)`;
+    case 'draw':
+      return 'Tablas (½-½)';
+    case 'forfeit_white':
+      return `${blackName ?? 'Negras'} gana por no presentado de ${whiteName ?? 'blancas'}`;
+    case 'forfeit_black':
+      return `${whiteName ?? 'Blancas'} gana por no presentado de ${blackName ?? 'negras'}`;
+    default:
+      return 'Sin resultado';
+  }
+}
+
 function getAssignedPlayerIds(pairings: Pairing[], excludeIndex: number): Set<string> {
   const ids = new Set<string>();
   pairings.forEach((p, i) => {
@@ -214,11 +237,17 @@ export function RoundManager({ roundNumber }: Props) {
 
   async function setResult(gameId: string, result: string) {
     await run(`result:${gameId}:${result}`, async () => {
-      await fetch('/api/games', {
+      const res = await fetch('/api/games', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ gameId, result }),
       });
+      if (!res.ok) {
+        const data = await res.json();
+        setMessage(data.error ?? 'Error al registrar resultado');
+        return;
+      }
+      setMessage('');
       await load();
     });
   }
@@ -448,26 +477,35 @@ export function RoundManager({ roundNumber }: Props) {
                   ? `${g.whiteName ?? g.blackName} — bye`
                   : `${g.whiteName} vs ${g.blackName ?? '—'}`}
               </p>
-              {round.status === 'active' && g.result === 'pending' && !g.isBye && (
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  {[
-                    { label: '1-0', result: 'white' },
-                    { label: '½-½', result: 'draw' },
-                    { label: '0-1', result: 'black' },
-                  ].map((btn) => (
-                    <AdminButton
-                      key={btn.result}
-                      className="min-h-[48px] py-3 text-lg"
-                      loading={isLoading(`result:${g.id}:${btn.result}`)}
-                      onClick={() => setResult(g.id, btn.result)}
-                    >
-                      {btn.label}
-                    </AdminButton>
-                  ))}
+              {round.status === 'active' && !g.isBye && (
+                <div className="mt-3">
+                  {g.result !== 'pending' && (
+                    <p className="mb-2 text-sm font-medium text-finished">
+                      {resultLabel(g.result, g.whiteName, g.blackName)}
+                    </p>
+                  )}
+                  <p className="mb-2 text-xs text-muted">
+                    {g.result === 'pending' ? 'Registrar resultado' : 'Corregir resultado'}
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {RESULT_OPTIONS.map((btn) => (
+                      <AdminButton
+                        key={btn.result}
+                        variant={g.result === btn.result ? 'primary' : 'secondary'}
+                        className="min-h-[48px] py-3 text-lg"
+                        loading={isLoading(`result:${g.id}:${btn.result}`)}
+                        onClick={() => setResult(g.id, btn.result)}
+                      >
+                        {btn.label}
+                      </AdminButton>
+                    ))}
+                  </div>
                 </div>
               )}
-              {g.result !== 'pending' && (
-                <p className="mt-2 text-sm font-medium text-finished">Resultado registrado</p>
+              {round.status !== 'active' && g.result !== 'pending' && (
+                <p className="mt-2 text-sm font-medium text-finished">
+                  {g.isBye ? 'Bye (+1 pt)' : resultLabel(g.result, g.whiteName, g.blackName)}
+                </p>
               )}
             </div>
           ))}
