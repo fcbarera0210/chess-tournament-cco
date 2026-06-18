@@ -33,3 +33,6 @@ pnpm-debug.log*
 
 # scripts
 scripts/
+
+# promo assets (local only)
+public/images/promo-story.png

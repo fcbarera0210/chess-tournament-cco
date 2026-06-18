@@ -1,0 +1,225 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getActiveTournament, getRegistrationStats } from '../lib/tournament';
+import { eventLegal } from '../lib/event-legal';
+
+export const prerender = false;
+
+const tournament = await getActiveTournament();
+const stats = tournament ? await getRegistrationStats(tournament.id) : null;
+
+const tournamentName = tournament?.name ?? 'Chess Tournament Curicó';
+const eventDate = tournament
+  ? new Date(tournament.eventDate + 'T12:00:00').toLocaleDateString('es-CL', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+  : 'fecha por confirmar';
+const venue = tournament?.venue ?? 'Curicó — lugar por confirmar';
+const timeStart = tournament?.eventTimeStart ?? '15:00';
+const timeEnd = tournament?.eventTimeEnd ?? '20:00';
+const timeControl = tournament?.timeControl ?? '10+5';
+const maxPlayers = tournament?.maxPlayers ?? 20;
+const waitlistEnabled = tournament?.waitlistEnabled ?? true;
+const registered = stats?.registered ?? 0;
+---
+
+<BaseLayout
+  title={`Bases del torneo — ${tournamentName}`}
+  description="Bases, reglas de participación y tratamiento de datos personales del torneo de ajedrez en Curicó."
+>
+  <section class="section-dark -mx-4 mb-10 rounded-3xl px-6 py-12 md:-mx-0">
+    <h1 class="font-display text-center text-4xl font-bold md:text-5xl">Bases del torneo</h1>
+    <p class="mx-auto mt-3 max-w-2xl text-center text-white/60">
+      Información sobre participación, reglas del evento y uso de datos personales.
+      Actualizado en {eventLegal.lastUpdated}.
+    </p>
+  </section>
+
+  <div class="mx-auto max-w-3xl space-y-8 pb-8">
+    <article class="card-light p-6 shadow-sm md:p-8">
+      <h2 class="font-display text-xl font-bold">1. Sobre el torneo</h2>
+      <div class="mt-4 space-y-3 text-sm leading-relaxed text-muted">
+        <p>
+          <strong class="text-ink">{tournamentName}</strong> es un torneo de ajedrez abierto,
+          gratuito y de carácter comunitario, orientado a fomentar el ajedrez en Curicó, Chile.
+        </p>
+        <ul class="list-inside list-disc space-y-1">
+          <li><strong class="text-ink">Organiza:</strong> {eventLegal.organizerName}</li>
+          <li><strong class="text-ink">Fecha:</strong> <span class="capitalize">{eventDate}</span></li>
+          <li><strong class="text-ink">Horario:</strong> {timeStart} – {timeEnd}</li>
+          <li><strong class="text-ink">Lugar:</strong> {venue}</li>
+          <li><strong class="text-ink">Formato:</strong> sistema suizo, varias rondas</li>
+          <li><strong class="text-ink">Control de tiempo:</strong> {timeControl}</li>
+          <li><strong class="text-ink">Cupo:</strong> {maxPlayers} jugadores ({registered} inscritos al momento)</li>
+          <li><strong class="text-ink">Inscripción:</strong> gratuita, abierta a todos los niveles</li>
+        </ul>
+        <p>
+          Este es un evento piloto. Los detalles logísticos pueden ajustarse antes del día del
+          torneo; cualquier cambio relevante se comunicará por los medios de contacto registrados.
+        </p>
+      </div>
+    </article>
+
+    <article class="card-light p-6 shadow-sm md:p-8">
+      <h2 class="font-display text-xl font-bold">2. Inscripción y participación</h2>
+      <div class="mt-4 space-y-3 text-sm leading-relaxed text-muted">
+        <ul class="list-inside list-disc space-y-2">
+          <li>
+            La inscripción se realiza en línea en <a href="/inscripcion" class="font-semibold text-ink underline-offset-2 hover:underline">/inscripcion</a> mientras esté abierta y haya cupos disponibles.
+          </li>
+          {
+            waitlistEnabled && (
+              <li>
+                Si el cupo está completo, puedes quedar en lista de espera. En ese caso te
+                contactaremos si se libera una plaza.
+              </li>
+            )
+          }
+          <li>
+            Al inscribirte confirmas tu intención real de asistir. Si no podrás ir, avísanos con
+            anticipación para liberar tu cupo.
+          </li>
+          <li>
+            El día del evento se realizará un check-in al llegar al local antes de comenzar las
+            rondas.
+          </li>
+          <li>
+            Quien no se presente sin aviso podrá quedar fuera de futuras ediciones del torneo, a
+            criterio de los organizadores.
+          </li>
+          <li>
+            Los organizadores se reservan el derecho de rechazar o retirar la participación de
+            quien no cumpla las normas de conducta o ponga en riesgo el buen desarrollo del
+            evento.
+          </li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="card-light p-6 shadow-sm md:p-8">
+      <h2 class="font-display text-xl font-bold">3. Desarrollo del día</h2>
+      <div class="mt-4 space-y-3 text-sm leading-relaxed text-muted">
+        <ul class="list-inside list-disc space-y-2">
+          <li>Llegada y registro de participantes en el local.</li>
+          <li>Varias rondas con emparejamientos por sistema suizo; partidas en paralelo.</li>
+          <li>Clasificación visible en tiempo real en la web del torneo.</li>
+          <li>
+            Los resultados de cada partida son registrados por los organizadores. En caso de
+            discrepancia, la decisión de la mesa directiva es final.
+          </li>
+          <li>
+            Se aplican las reglas generales del ajedrez (FIDE en lo que corresponda a partidas
+            rápidas), salvo indicación contraria el día del evento.
+          </li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="card-light p-6 shadow-sm md:p-8">
+      <h2 class="font-display text-xl font-bold">4. Conducta y uso del local</h2>
+      <div class="mt-4 space-y-3 text-sm leading-relaxed text-muted">
+        <ul class="list-inside list-disc space-y-2">
+          <li>Se espera respeto mutuo entre jugadores, organizadores y el personal del local.</li>
+          <li>Está prohibido hacer trampas, usar ayudas electrónicas durante las partidas o alterar resultados.</li>
+          <li>Deben respetarse las normas del recinto (horarios, espacios, consumo, etc.).</li>
+          <li>Los organizadores pueden solicitar el retiro de quien incumpla estas normas.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="card-light p-6 shadow-sm md:p-8">
+      <h2 class="font-display text-xl font-bold">5. Menores de edad</h2>
+      <p class="mt-4 text-sm leading-relaxed text-muted">
+        {eventLegal.minorsPolicy}
+      </p>
+    </article>
+
+    <article class="card-light p-6 shadow-sm md:p-8">
+      <h2 class="font-display text-xl font-bold">6. Datos personales</h2>
+      <div class="mt-4 space-y-3 text-sm leading-relaxed text-muted">
+        <p>
+          Al inscribirte, recopilamos los siguientes datos: <strong class="text-ink">nombre
+          completo</strong>, <strong class="text-ink">contacto</strong> (correo o teléfono) y,
+          opcionalmente, <strong class="text-ink">club o nivel</strong>.
+        </p>
+        <p><strong class="text-ink">Finalidad:</strong></p>
+        <ul class="list-inside list-disc space-y-1">
+          <li>Gestionar tu inscripción y cupo en el torneo.</li>
+          <li>Contactarte por novedades, cambios o liberación de cupos (lista de espera).</li>
+          <li>Operar el torneo: emparejamientos, resultados y clasificación.</li>
+        </ul>
+        <p>
+          <strong class="text-ink">Visibilidad:</strong> tu nombre puede aparecer en la
+          clasificación pública del torneo (<a href="/clasificacion" class="font-semibold text-ink underline-offset-2 hover:underline">/clasificacion</a>, <a href="/live" class="font-semibold text-ink underline-offset-2 hover:underline">/live</a> y pantallas del local).
+          Tu contacto <strong class="text-ink">no se publica</strong> en la web.
+        </p>
+        <p>
+          <strong class="text-ink">Responsable del tratamiento:</strong> {eventLegal.organizerName}.
+        </p>
+        <p>
+          <strong class="text-ink">Conservación:</strong> los datos se mantendrán hasta{' '}
+          {eventLegal.dataRetentionMonths} meses después del evento, salvo que solicites su
+          eliminación antes.
+        </p>
+        <p>
+          <strong class="text-ink">Tus derechos:</strong> puedes solicitar acceso, corrección o
+          eliminación de tus datos escribiendo a{' '}
+          <a
+            href={`mailto:${eventLegal.contactEmail}`}
+            class="font-semibold text-ink underline-offset-2 hover:underline"
+          >
+            {eventLegal.contactEmail}
+          </a>.
+        </p>
+        <p>
+          No compartimos tus datos con terceros con fines comerciales. La plataforma web utiliza
+          servicios de alojamiento necesarios para su funcionamiento (base de datos y hosting).
+        </p>
+      </div>
+    </article>
+
+    <article class="card-light p-6 shadow-sm md:p-8">
+      <h2 class="font-display text-xl font-bold">7. Responsabilidad y limitaciones</h2>
+      <div class="mt-4 space-y-3 text-sm leading-relaxed text-muted">
+        <ul class="list-inside list-disc space-y-2">
+          <li>
+            La participación es voluntaria. Cada persona asiste bajo su propia responsabilidad.
+          </li>
+          <li>
+            Los organizadores no se hacen responsables por pérdida, daño o robo de objetos
+            personales durante el evento.
+          </li>
+          <li>
+            El torneo es un evento comunitario sin fines de lucro. No hay premio en efectivo
+            garantizado salvo que se anuncie expresamente antes del evento.
+          </li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="card-light p-6 shadow-sm md:p-8">
+      <h2 class="font-display text-xl font-bold">8. Cambios y cancelación</h2>
+      <div class="mt-4 space-y-3 text-sm leading-relaxed text-muted">
+        <p>
+          Los organizadores pueden modificar fecha, horario, lugar, cupo o formato del torneo por
+          causas de fuerza mayor, baja asistencia, condiciones del local u otras razones
+          logísticas. En caso de cancelación, se informará a los inscritos por los medios de
+          contacto registrados.
+        </p>
+        <p>
+          Al inscribirte aceptas estas bases y el tratamiento de tus datos conforme a lo descrito
+          en este documento.
+        </p>
+      </div>
+    </article>
+
+    <div class="text-center">
+      <a href="/inscripcion" class="btn-pill btn-pill-primary inline-flex px-6 py-3">
+        Ir a inscripción
+      </a>
+    </div>
+  </div>
+</BaseLayout>

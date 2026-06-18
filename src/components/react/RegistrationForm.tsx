@@ -129,7 +129,13 @@ export function RegistrationForm({ eventDate, venue }: Props) {
           className="mt-1 h-4 w-4 rounded border-border accent-ink"
           required
         />
-        <span>Confirmo que puedo asistir el {eventDate} en {venue}.</span>
+        <span>
+          Confirmo que puedo asistir el {eventDate} en {venue} y acepto las{' '}
+          <a href="/bases" className="font-semibold text-ink underline-offset-2 hover:underline">
+            bases del torneo
+          </a>{' '}
+          y el uso de mis datos personales según se describe allí.
+        </span>
       </label>
 
       <button
