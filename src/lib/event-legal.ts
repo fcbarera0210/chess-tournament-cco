@@ -11,7 +11,7 @@ export const eventLegal = {
   contactEmail:
     import.meta.env.PUBLIC_CONTACT_EMAIL ??
     process.env.PUBLIC_CONTACT_EMAIL ??
-    'fmartinezy@gmail.com',
+    'fmartinezy02@gmail.com',
 
   /** Meses que se conservan los datos tras el evento */
   dataRetentionMonths: 3,
