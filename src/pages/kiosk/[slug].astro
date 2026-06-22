@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { LiveView } from '../../components/react/LiveView';
+import { getTournamentBySlug } from '../../lib/tournament';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+if (!slug) {
+  return new Response(null, { status: 404 });
+}
+
+const tournament = await getTournamentBySlug(slug);
+if (!tournament) {
+  return new Response(null, { status: 404 });
+}
+
+if (tournament.status === 'finished') {
+  return Astro.redirect(`/torneo/${slug}`);
+}
+
+const cols = Number(Astro.url.searchParams.get('cols') ?? '3');
+---
+
+<BaseLayout title={`Kiosk — ${tournament.name}`} kiosk={true}>
+  <LiveView client:load slug={slug} mode="kiosk" cols={cols} />
+</BaseLayout>

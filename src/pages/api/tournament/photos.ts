@@ -2,13 +2,19 @@ import type { APIRoute } from 'astro';
 import { eq, asc } from 'drizzle-orm';
 import { db } from '../../../lib/db';
 import { tournamentPhotos } from '../../../lib/db/schema';
-import { getActiveTournament } from '../../../lib/tournament';
+import { getTournamentBySlug } from '../../../lib/tournament';
 import { withAdmin } from '../../../lib/session';
+import { requireAdminTournament } from '../../../lib/admin-tournament-context';
 
 export const prerender = false;
 
-export const GET: APIRoute = async () => {
-  const tournament = await getActiveTournament();
+export const GET: APIRoute = async ({ url }) => {
+  const slug = url.searchParams.get('slug');
+  if (!slug) {
+    return new Response(JSON.stringify({ error: 'Slug requerido' }), { status: 400 });
+  }
+
+  const tournament = await getTournamentBySlug(slug);
   if (!tournament) {
     return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
   }
@@ -31,7 +37,7 @@ export const GET: APIRoute = async () => {
 
 export const POST: APIRoute = async ({ request }) =>
   withAdmin(request, async () => {
-    const tournament = await getActiveTournament();
+    const tournament = await requireAdminTournament(request);
     if (!tournament) {
       return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
     }
@@ -68,7 +74,7 @@ export const POST: APIRoute = async ({ request }) =>
 
 export const PATCH: APIRoute = async ({ request }) =>
   withAdmin(request, async () => {
-    const tournament = await getActiveTournament();
+    const tournament = await requireAdminTournament(request);
     if (!tournament) {
       return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
     }
@@ -89,7 +95,7 @@ export const PATCH: APIRoute = async ({ request }) =>
       .where(eq(tournamentPhotos.id, photoId))
       .returning();
 
-    if (!photo) {
+    if (!photo || photo.tournamentId !== tournament.id) {
       return new Response(JSON.stringify({ error: 'Foto no encontrada' }), { status: 404 });
     }
 
@@ -100,10 +106,25 @@ export const PATCH: APIRoute = async ({ request }) =>
 
 export const DELETE: APIRoute = async ({ request }) =>
   withAdmin(request, async () => {
+    const tournament = await requireAdminTournament(request);
+    if (!tournament) {
+      return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
+    }
+
     const body = await request.json();
     const photoId = body.id as string | undefined;
     if (!photoId) {
       return new Response(JSON.stringify({ error: 'id requerido' }), { status: 400 });
+    }
+
+    const [photo] = await db
+      .select()
+      .from(tournamentPhotos)
+      .where(eq(tournamentPhotos.id, photoId))
+      .limit(1);
+
+    if (!photo || photo.tournamentId !== tournament.id) {
+      return new Response(JSON.stringify({ error: 'Foto no encontrada' }), { status: 404 });
     }
 
     await db.delete(tournamentPhotos).where(eq(tournamentPhotos.id, photoId));

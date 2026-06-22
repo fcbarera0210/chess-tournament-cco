@@ -3,7 +3,6 @@
 interface ImportMetaEnv {
   readonly DATABASE_URL: string;
   readonly AUTH_SECRET: string;
-  readonly PUBLIC_TOURNAMENT_SLUG?: string;
   readonly ADMIN_SEED_USERNAME?: string;
   readonly ADMIN_SEED_PASSWORD?: string;
   readonly BLOB_READ_WRITE_TOKEN?: string;

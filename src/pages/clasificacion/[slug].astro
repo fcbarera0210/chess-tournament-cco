@@ -1,0 +1,50 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { StandingsTable } from '../../components/react/StandingsTable';
+import { getTournamentBySlug } from '../../lib/tournament';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+if (!slug) {
+  return new Response(null, { status: 404 });
+}
+
+const tournament = await getTournamentBySlug(slug);
+if (!tournament) {
+  return new Response(null, { status: 404 });
+}
+
+const isFinished = tournament.status === 'finished';
+---
+
+<BaseLayout
+  title={`Clasificación — ${tournament.name}`}
+  wide={true}
+  tournamentSlug={tournament.slug}
+  tournamentName={tournament.name}
+  finished={isFinished}
+  showRegistration={tournament.publicRegistration && !isFinished}
+>
+  <section class="section-dark -mx-4 mb-10 rounded-3xl px-6 py-12 md:-mx-0">
+    <h1 class="font-display text-center text-4xl font-bold md:text-5xl">Clasificación</h1>
+    <p class="mx-auto mt-3 max-w-lg text-center text-white/60">
+      {
+        isFinished ? (
+          <>
+            Torneo finalizado.{' '}
+            <a href={`/torneo/${slug}`} class="text-white underline hover:no-underline">
+              Ver archivo completo
+            </a>
+          </>
+        ) : (
+          <>
+            Tabla actualizada automáticamente durante el torneo.
+            <a href={`/live/${slug}`} class="text-white underline hover:no-underline"> Ver en vivo</a>
+          </>
+        )
+      }
+    </p>
+  </section>
+  <StandingsTable client:load slug={slug} />
+</BaseLayout>

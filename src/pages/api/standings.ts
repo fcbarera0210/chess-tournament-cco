@@ -2,13 +2,18 @@ import type { APIRoute } from 'astro';
 import { eq } from 'drizzle-orm';
 import { db } from '../../lib/db';
 import { players } from '../../lib/db/schema';
-import { getActiveTournament } from '../../lib/tournament';
+import { getTournamentBySlug } from '../../lib/tournament';
 import { computeStandings } from '../../lib/standings';
 
 export const prerender = false;
 
-export const GET: APIRoute = async () => {
-  const tournament = await getActiveTournament();
+export const GET: APIRoute = async ({ url }) => {
+  const slug = url.searchParams.get('slug');
+  if (!slug) {
+    return new Response(JSON.stringify({ error: 'Slug requerido' }), { status: 400 });
+  }
+
+  const tournament = await getTournamentBySlug(slug);
   if (!tournament) {
     return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
   }

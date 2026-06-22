@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { publicApiUrl } from '../../lib/admin-api';
 
 type RegistrationInfo = {
   error?: string;
@@ -13,12 +14,16 @@ type RegistrationInfo = {
   };
 };
 
-export function SpotsCounter() {
+type Props = {
+  slug: string;
+};
+
+export function SpotsCounter({ slug }: Props) {
   const [info, setInfo] = useState<RegistrationInfo | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch('/api/registrations')
+    fetch(publicApiUrl('/api/registrations', slug))
       .then((r) => {
         if (!r.ok) {
           setError(true);
@@ -34,7 +39,7 @@ export function SpotsCounter() {
         }
       })
       .catch(() => setError(true));
-  }, []);
+  }, [slug]);
 
   if (!info && !error) {
     return (

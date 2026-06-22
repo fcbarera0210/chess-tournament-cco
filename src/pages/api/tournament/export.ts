@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { zipSync, strToU8 } from 'fflate';
 import { db } from '../../../lib/db';
 import { players } from '../../../lib/db/schema';
-import { getActiveTournament } from '../../../lib/tournament';
+import { requireAdminTournament } from '../../../lib/admin-tournament-context';
 import { buildTournamentArchive } from '../../../lib/tournament-archive';
 import { withAdmin } from '../../../lib/session';
 
@@ -27,7 +27,7 @@ function toCsv(headers: string[], rows: (string | number | null | undefined)[][]
 
 export const GET: APIRoute = async ({ request }) =>
   withAdmin(request, async () => {
-    const tournament = await getActiveTournament();
+    const tournament = await requireAdminTournament(request);
     if (!tournament) {
       return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
     }

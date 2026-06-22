@@ -6,78 +6,81 @@ import FeatureCard from '../components/astro/FeatureCard.astro';
 import InfoRow from '../components/astro/InfoRow.astro';
 import TournamentIllustration from '../components/astro/TournamentIllustration.astro';
 import PillButton from '../components/astro/PillButton.astro';
-import { getActiveTournament, getRegistrationStats } from '../lib/tournament';
+import {
+  getFeaturedTournament,
+  getPublicArchiveTournaments,
+  getPrimaryHomeArchive,
+  getRegistrationStats,
+} from '../lib/tournament';
 import { CHESS_SVG_SIZE } from '../lib/chess-svg-sizes';
 
 export const prerender = false;
 
-const tournament = await getActiveTournament();
-const stats = tournament ? await getRegistrationStats(tournament.id) : null;
-const isFinished = tournament?.status === 'finished';
+const featured = await getFeaturedTournament();
+const primaryArchive = featured ? null : await getPrimaryHomeArchive();
+let archives = await getPublicArchiveTournaments();
+if (featured && archives.length === 0) {
+  const fallback = await getPrimaryHomeArchive();
+  if (fallback && fallback.id !== featured.id) {
+    archives = [fallback];
+  }
+}
+const otherArchives = primaryArchive
+  ? archives.filter((a) => a.id !== primaryArchive.id)
+  : archives;
 
-const eventDate = tournament
-  ? new Date(tournament.eventDate + 'T12:00:00').toLocaleDateString('es-CL', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    })
-  : 'sábado 20 de junio';
+const navTournament = featured ?? primaryArchive;
+const featuredStats = featured ? await getRegistrationStats(featured.id) : null;
+const archiveStatsEntries =
+  featured && archives.length > 0
+    ? await Promise.all(
+        archives.map(async (tournament) => ({
+          tournament,
+          stats: await getRegistrationStats(tournament.id),
+        })),
+      )
+    : [];
+const primaryArchiveStats = primaryArchive ? await getRegistrationStats(primaryArchive.id) : null;
+const isArchiveHome = !featured && !!primaryArchive;
+
+function formatEventDate(dateStr: string) {
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CL', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+}
+
+function formatArchiveDate(dateStr: string) {
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CL', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+const eventDate = navTournament ? formatEventDate(navTournament.eventDate) : '';
 ---
 
-<BaseLayout finished={isFinished}>
-  <Hero
-    tournamentName={tournament?.name ?? 'Chess Tournament Curicó'}
-    finished={isFinished}
-    eventDate={eventDate}
-    venue={tournament?.venue}
-  />
-
+<BaseLayout
+  tournamentSlug={navTournament?.slug ?? null}
+  tournamentName={navTournament?.name ?? 'Chess Tournament Curicó'}
+  showRegistration={featured?.publicRegistration ?? false}
+  finished={isArchiveHome}
+>
   {
-    isFinished ? (
+    featured ? (
       <>
-        <SectionDark class="mt-12 rounded-3xl">
-          <h2 class="font-display mx-auto mb-6 max-w-2xl text-center text-3xl font-bold md:text-4xl">
-            Próximos eventos
-          </h2>
-          <p class="mx-auto max-w-2xl text-center text-white/70">
-            Gracias al gran impacto del primer torneo, estamos preparando nuevas jornadas de ajedrez en
-            Curicó. Mantente atento para más información.
-          </p>
-        </SectionDark>
+        <Hero
+          tournamentName={featured.name}
+          slug={featured.slug}
+          finished={false}
+          showRegistration={featured.publicRegistration}
+          eventDate={eventDate}
+          venue={featured.venue}
+        />
 
-        <section class="mt-16">
-          <div class="card-light mx-auto max-w-3xl p-8 shadow-lg">
-            <h2 class="font-display text-2xl font-bold md:text-3xl">Primer torneo realizado</h2>
-            <p class="mt-3 text-muted">
-              Revisa quiénes participaron, la clasificación final, todas las partidas jugadas y la galería
-              de fotos del evento.
-            </p>
-            <dl class="mt-6 space-y-3 text-sm">
-              <div>
-                <dt class="text-muted">Fecha</dt>
-                <dd class="font-semibold capitalize">{eventDate}</dd>
-              </div>
-              <div>
-                <dt class="text-muted">Lugar</dt>
-                <dd class="font-semibold">{tournament?.venue}</dd>
-              </div>
-              {
-                stats && (
-                  <div>
-                    <dt class="text-muted">Participantes</dt>
-                    <dd class="font-semibold">{stats.registered} jugadores</dd>
-                  </div>
-                )
-              }
-            </dl>
-            <div class="mt-8">
-              <PillButton href="/torneo">Ver archivo completo del torneo</PillButton>
-            </div>
-          </div>
-        </section>
-      </>
-    ) : (
-      <>
         <SectionDark class="mt-12 rounded-3xl">
           <h2 class="font-display mx-auto mb-12 max-w-2xl text-center text-3xl font-bold md:text-4xl">
             ¿Por qué participar?
@@ -141,7 +144,7 @@ const eventDate = tournament
             >
               <p class="capitalize">{eventDate}</p>
               <p>
-                {tournament?.eventTimeStart ?? '15:00'} – {tournament?.eventTimeEnd ?? '20:00'}
+                {featured.eventTimeStart} – {featured.eventTimeEnd}
               </p>
             </InfoRow>
             <InfoRow
@@ -150,11 +153,11 @@ const eventDate = tournament
               pieceWidth={CHESS_SVG_SIZE['b-rook'].width}
               pieceHeight={CHESS_SVG_SIZE['b-rook'].height}
             >
-              <p>{tournament?.venue ?? 'Curicó — lugar por confirmar'}</p>
+              <p>{featured.venue}</p>
               {
-                tournament?.venueMapsUrl && (
+                featured.venueMapsUrl && (
                   <a
-                    href={tournament.venueMapsUrl}
+                    href={featured.venueMapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     class="mt-1 inline-block font-semibold text-ink underline-offset-2 hover:underline"
@@ -170,14 +173,14 @@ const eventDate = tournament
               pieceWidth={CHESS_SVG_SIZE['w-bishop'].width}
               pieceHeight={CHESS_SVG_SIZE['w-bishop'].height}
             >
-              <p>Varias rondas · control {tournament?.timeControl ?? '10+5'}</p>
+              <p>Varias rondas · control {featured.timeControl}</p>
               {
-                stats && (
+                featuredStats && (
                   <a
-                    href="/clasificacion"
+                    href={`/clasificacion/${featured.slug}`}
                     class="mt-1 inline-block font-semibold text-ink underline-offset-2 hover:underline"
                   >
-                    {stats.registered} jugadores inscritos
+                    {featuredStats.registered} jugadores inscritos
                   </a>
                 )
               }
@@ -203,7 +206,138 @@ const eventDate = tournament
             </li>
           </ol>
         </section>
+
+        {
+          archiveStatsEntries.length > 0 && (
+            <section class="mt-16">
+              <h2 class="font-display mb-8 text-center text-3xl font-bold">
+                {archiveStatsEntries.length === 1 ? 'Torneo finalizado' : 'Torneos anteriores'}
+              </h2>
+              <div class="mx-auto grid max-w-4xl gap-4">
+                {
+                  archiveStatsEntries.map(({ tournament: archive, stats: archiveStats }) => (
+                    <div class="card-light p-8 shadow-lg">
+                      <h3 class="font-display text-2xl font-bold md:text-3xl">{archive.name}</h3>
+                      <p class="mt-3 text-muted">
+                        Revisa quiénes participaron, la clasificación final, todas las partidas jugadas y
+                        la galería de fotos del evento.
+                      </p>
+                      <dl class="mt-6 space-y-3 text-sm">
+                        <div>
+                          <dt class="text-muted">Fecha</dt>
+                          <dd class="font-semibold capitalize">
+                            {formatArchiveDate(archive.eventDate)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt class="text-muted">Lugar</dt>
+                          <dd class="font-semibold">{archive.venue}</dd>
+                        </div>
+                        <div>
+                          <dt class="text-muted">Participantes</dt>
+                          <dd class="font-semibold">{archiveStats.registered} jugadores</dd>
+                        </div>
+                      </dl>
+                      <div class="mt-8 flex flex-wrap gap-4">
+                        <PillButton href={`/torneo/${archive.slug}`}>
+                          Ver archivo completo del torneo
+                        </PillButton>
+                        <PillButton href={`/clasificacion/${archive.slug}`} variant="outline">
+                          Clasificación
+                        </PillButton>
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+            </section>
+          )
+        }
       </>
+    ) : isArchiveHome && primaryArchive ? (
+      <>
+        <Hero
+          tournamentName={primaryArchive.name}
+          slug={primaryArchive.slug}
+          finished={true}
+          eventDate={eventDate}
+          venue={primaryArchive.venue}
+        />
+
+        <SectionDark class="mt-12 rounded-3xl">
+          <h2 class="font-display mx-auto mb-6 max-w-2xl text-center text-3xl font-bold md:text-4xl">
+            Próximos eventos
+          </h2>
+          <p class="mx-auto max-w-2xl text-center text-white/70">
+            Gracias al gran impacto del primer torneo, estamos preparando nuevas jornadas de ajedrez en
+            Curicó. Mantente atento para más información.
+          </p>
+        </SectionDark>
+
+        <section class="mt-16">
+          <div class="card-light mx-auto max-w-3xl p-8 shadow-lg">
+            <h2 class="font-display text-2xl font-bold md:text-3xl">Primer torneo realizado</h2>
+            <p class="mt-3 text-muted">
+              Revisa quiénes participaron, la clasificación final, todas las partidas jugadas y la galería
+              de fotos del evento.
+            </p>
+            <dl class="mt-6 space-y-3 text-sm">
+              <div>
+                <dt class="text-muted">Fecha</dt>
+                <dd class="font-semibold capitalize">{eventDate}</dd>
+              </div>
+              <div>
+                <dt class="text-muted">Lugar</dt>
+                <dd class="font-semibold">{primaryArchive.venue}</dd>
+              </div>
+              {
+                primaryArchiveStats && (
+                  <div>
+                    <dt class="text-muted">Participantes</dt>
+                    <dd class="font-semibold">{primaryArchiveStats.registered} jugadores</dd>
+                  </div>
+                )
+              }
+            </dl>
+            <div class="mt-8">
+              <PillButton href={`/torneo/${primaryArchive.slug}`}>
+                Ver archivo completo del torneo
+              </PillButton>
+            </div>
+          </div>
+        </section>
+      </>
+    ) : (
+      <SectionDark class="mt-12 rounded-3xl">
+        <h2 class="font-display mx-auto mb-6 max-w-2xl text-center text-3xl font-bold md:text-4xl">
+          Próximos eventos
+        </h2>
+        <p class="mx-auto max-w-2xl text-center text-white/70">
+          Estamos preparando nuevas jornadas de ajedrez en Curicó. Mantente atento para más información.
+        </p>
+      </SectionDark>
+    )
+  }
+
+  {
+    isArchiveHome && otherArchives.length > 0 && (
+      <section class="mt-16">
+        <h2 class="font-display mb-8 text-center text-3xl font-bold">Torneos anteriores</h2>
+        <div class="mx-auto grid max-w-4xl gap-4">
+          {
+            otherArchives.map((archive) => (
+              <div class="card-light p-8 shadow-lg">
+                <h3 class="font-display text-xl font-bold">{archive.name}</h3>
+                <p class="mt-2 capitalize text-muted">{formatArchiveDate(archive.eventDate)}</p>
+                <p class="mt-1 text-sm text-muted">{archive.venue}</p>
+                <div class="mt-6">
+                  <PillButton href={`/torneo/${archive.slug}`}>Ver archivo del torneo</PillButton>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </section>
     )
   }
 </BaseLayout>

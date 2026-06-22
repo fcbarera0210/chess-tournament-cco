@@ -4,14 +4,18 @@ import { SpotsCounter } from '../react/SpotsCounter';
 
 interface Props {
   tournamentName?: string;
+  slug?: string;
   finished?: boolean;
+  showRegistration?: boolean;
   eventDate?: string;
   venue?: string;
 }
 
 const {
   tournamentName = 'Chess Tournament Curicó',
+  slug = '',
   finished = false,
+  showRegistration = false,
   eventDate = '',
   venue = '',
 } = Astro.props;
@@ -38,23 +42,31 @@ const {
               {venue ? ` · ${venue}` : ''}
             </p>
           )}
-          <div class="mt-8 flex flex-wrap justify-center gap-4">
-            <PillButton href="/torneo">Ver resultados del torneo</PillButton>
-            <PillButton href="/clasificacion" variant="outline">Clasificación</PillButton>
-          </div>
+          {slug && (
+            <div class="mt-8 flex flex-wrap justify-center gap-4">
+              <PillButton href={`/torneo/${slug}`}>Ver resultados del torneo</PillButton>
+              <PillButton href={`/clasificacion/${slug}`} variant="outline">Clasificación</PillButton>
+            </div>
+          )}
         </>
       ) : (
         <>
           <p class="mx-auto mt-6 max-w-xl text-lg text-muted md:text-xl">
             Torneo casual de ajedrez. Inscripción gratuita, todos los niveles bienvenidos.
           </p>
-          <div class="mt-8 flex justify-center">
-            <SpotsCounter client:load />
-          </div>
-          <div class="mt-8 flex flex-wrap justify-center gap-4">
-            <PillButton href="/inscripcion">Inscribirme</PillButton>
-            <PillButton href="/clasificacion" variant="outline">Clasificación</PillButton>
-          </div>
+          {slug && showRegistration && (
+            <div class="mt-8 flex justify-center">
+              <SpotsCounter client:load slug={slug} />
+            </div>
+          )}
+          {slug && (
+            <div class="mt-8 flex flex-wrap justify-center gap-4">
+              {showRegistration && (
+                <PillButton href={`/inscripcion/${slug}`}>Inscribirme</PillButton>
+              )}
+              <PillButton href={`/clasificacion/${slug}`} variant="outline">Clasificación</PillButton>
+            </div>
+          )}
         </>
       )
     }

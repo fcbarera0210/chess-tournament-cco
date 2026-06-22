@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { TournamentArchive } from '../../components/react/TournamentArchive';
+import { getTournamentBySlug } from '../../lib/tournament';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+if (!slug) {
+  return new Response(null, { status: 404 });
+}
+
+const tournament = await getTournamentBySlug(slug);
+if (!tournament) {
+  return new Response(null, { status: 404 });
+}
+---
+
+<BaseLayout
+  title={`Resultados — ${tournament.name}`}
+  wide={true}
+  tournamentSlug={tournament.slug}
+  tournamentName={tournament.name}
+  finished={true}
+>
+  <TournamentArchive client:load slug={slug} />
+</BaseLayout>

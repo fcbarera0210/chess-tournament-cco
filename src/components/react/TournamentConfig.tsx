@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { AdminButton } from './AdminButton';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
+import { useAdminTournament } from '../../hooks/useAdminTournament';
+import { adminApiUrl } from '../../lib/admin-api';
+import { AdminTournamentPublicLinks } from './AdminTournamentPublicLinks';
 
 type Tournament = {
   id: string;
   name: string;
+  slug: string;
   eventDate: string;
   venue: string;
   venueMapsUrl: string | null;
@@ -16,23 +20,27 @@ type Tournament = {
   format: 'swiss' | 'knockout';
   status: string;
   waitlistEnabled: boolean;
+  showOnHome: boolean;
+  publicRegistration: boolean;
 };
 
 export function TournamentConfig() {
+  const { tournamentId, loading: ctxLoading } = useAdminTournament();
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [message, setMessage] = useState('');
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const { run, isLoading } = useAsyncAction();
 
   async function load() {
-    const res = await fetch('/api/tournament');
+    if (!tournamentId) return;
+    const res = await fetch(adminApiUrl('/api/tournament', tournamentId));
     const data = await res.json();
     setTournament(data.tournament);
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    if (tournamentId) load();
+  }, [tournamentId]);
 
   useEffect(() => {
     if (!resetModalOpen) return;
@@ -46,9 +54,10 @@ export function TournamentConfig() {
   }, [resetModalOpen]);
 
   async function resetTournament(mode: 'rounds' | 'full') {
+    if (!tournamentId) return;
     await run(`reset-${mode}`, async () => {
       setMessage('');
-      const res = await fetch('/api/tournament/reset', {
+      const res = await fetch(adminApiUrl('/api/tournament/reset', tournamentId), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode }),
@@ -64,10 +73,10 @@ export function TournamentConfig() {
   }
 
   async function save(updates: Partial<Tournament>, actionId: string) {
-    if (!tournament) return;
+    if (!tournament || !tournamentId) return;
     await run(actionId, async () => {
       setMessage('');
-      const res = await fetch('/api/tournament', {
+      const res = await fetch(adminApiUrl('/api/tournament', tournamentId), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
@@ -81,7 +90,7 @@ export function TournamentConfig() {
     });
   }
 
-  if (!tournament) return <p className="text-muted">Cargando...</p>;
+  if (ctxLoading || !tournament) return <p className="text-muted">Cargando...</p>;
 
   const canEditFormatFields =
     tournament.status === 'draft' ||
@@ -92,8 +101,9 @@ export function TournamentConfig() {
   const resetting = isLoading('reset-rounds') || isLoading('reset-full');
 
   async function exportData() {
+    if (!tournamentId) return;
     await run('export', async () => {
-      const res = await fetch('/api/tournament/export');
+      const res = await fetch(adminApiUrl('/api/tournament/export', tournamentId));
       if (!res.ok) {
         setMessage('Error al exportar datos');
         return;
@@ -242,6 +252,46 @@ export function TournamentConfig() {
           </div>
         )}
 
+        <div className="border-t border-border pt-4">
+          <span className="text-sm font-medium">Visibilidad pública</span>
+          <div className="mt-3 space-y-3">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={tournament.showOnHome}
+                disabled={saving || isFinished}
+                onChange={(e) => {
+                  const showOnHome = e.target.checked;
+                  setTournament({ ...tournament, showOnHome });
+                  save({ showOnHome }, 'visibility-home');
+                }}
+                className="mt-1"
+              />
+              <span>
+                <span className="block text-sm">Mostrar en home</span>
+                <span className="text-xs text-muted">Destacado activo o archivo al finalizar.</span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={tournament.publicRegistration}
+                disabled={saving || isFinished}
+                onChange={(e) => {
+                  const publicRegistration = e.target.checked;
+                  setTournament({ ...tournament, publicRegistration });
+                  save({ publicRegistration }, 'visibility-reg');
+                }}
+                className="mt-1"
+              />
+              <span>
+                <span className="block text-sm">Inscripción pública</span>
+                <span className="text-xs text-muted">Habilita formulario en /inscripcion/{tournament.slug}</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
         <div>
           <span className="text-sm font-medium">Estado del torneo</span>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -298,6 +348,8 @@ export function TournamentConfig() {
           )}
         </div>
       </div>
+
+      <AdminTournamentPublicLinks slug={tournament.slug} status={tournament.status} />
 
       <div className="admin-card p-5">
         <h2 className="font-display text-lg font-bold">Exportar datos</h2>

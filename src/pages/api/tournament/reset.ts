@@ -1,12 +1,13 @@
 import type { APIRoute } from 'astro';
-import { getActiveTournament, resetTournamentData, isTournamentLocked } from '../../../lib/tournament';
+import { resetTournamentData, isTournamentLocked } from '../../../lib/tournament';
+import { requireAdminTournament } from '../../../lib/admin-tournament-context';
 import { withAdmin } from '../../../lib/session';
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) =>
   withAdmin(request, async () => {
-    const tournament = await getActiveTournament();
+    const tournament = await requireAdminTournament(request);
     if (!tournament) {
       return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
     }

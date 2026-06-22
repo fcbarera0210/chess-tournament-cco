@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { AdminButton } from './AdminButton';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
 import { showAdminToast } from '../../lib/admin-toast';
+import { useAdminTournament } from '../../hooks/useAdminTournament';
+import { adminApiUrl } from '../../lib/admin-api';
 
 type Player = { id: string; name: string; status: string };
 
@@ -86,6 +88,7 @@ function gamesToPairings(games: Game[]): Pairing[] {
 }
 
 export function RoundManager({ roundNumber }: Props) {
+  const { tournamentId } = useAdminTournament();
   const [round, setRound] = useState<Round | null>(null);
   const [games, setGames] = useState<Game[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -96,9 +99,10 @@ export function RoundManager({ roundNumber }: Props) {
   const { run, isLoading } = useAsyncAction();
 
   async function load() {
+    if (!tournamentId) return;
     const [roundRes, playersRes] = await Promise.all([
-      fetch(`/api/rounds/${roundNumber}`),
-      fetch('/api/players'),
+      fetch(adminApiUrl(`/api/rounds/${roundNumber}`, tournamentId)),
+      fetch(adminApiUrl('/api/players', tournamentId)),
     ]);
 
     if (roundRes.ok) {
@@ -117,8 +121,8 @@ export function RoundManager({ roundNumber }: Props) {
   }
 
   useEffect(() => {
-    load();
-  }, [roundNumber]);
+    if (tournamentId) load();
+  }, [tournamentId, roundNumber]);
 
   const checkedInPlayers = players.filter((p) => p.status === 'checked_in');
 
@@ -144,7 +148,7 @@ export function RoundManager({ roundNumber }: Props) {
     if (!round) return;
     await run('generate', async () => {
       setPairingWarnings([]);
-      const res = await fetch('/api/rounds', {
+      const res = await fetch(adminApiUrl('/api/rounds', tournamentId!), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'generate_pairings', roundId: round.id }),
@@ -189,7 +193,7 @@ export function RoundManager({ roundNumber }: Props) {
       const valid = pairings.filter((p) =>
         p.isBye ? p.whitePlayerId : p.whitePlayerId && p.blackPlayerId,
       );
-      const res = await fetch('/api/rounds', {
+      const res = await fetch(adminApiUrl('/api/rounds', tournamentId!), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -218,7 +222,7 @@ export function RoundManager({ roundNumber }: Props) {
   async function activateRound() {
     if (!round) return;
     await run('activate', async () => {
-      const res = await fetch('/api/rounds', {
+      const res = await fetch(adminApiUrl('/api/rounds', tournamentId!), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'activate_round', roundId: round.id }),
@@ -235,7 +239,7 @@ export function RoundManager({ roundNumber }: Props) {
 
   async function setResult(gameId: string, result: string) {
     await run(`result:${gameId}:${result}`, async () => {
-      const res = await fetch('/api/games', {
+      const res = await fetch(adminApiUrl('/api/games', tournamentId!), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ gameId, result }),
@@ -252,7 +256,7 @@ export function RoundManager({ roundNumber }: Props) {
   async function completeRound() {
     if (!round) return;
     await run('complete', async () => {
-      const res = await fetch('/api/rounds', {
+      const res = await fetch(adminApiUrl('/api/rounds', tournamentId!), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'complete_round', roundId: round.id }),

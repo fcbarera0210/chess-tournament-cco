@@ -2,7 +2,8 @@ import type { APIRoute } from 'astro';
 import { eq } from 'drizzle-orm';
 import { db } from '../../lib/db';
 import { games, rounds } from '../../lib/db/schema';
-import { getActiveTournament, isTournamentLocked } from '../../lib/tournament';
+import { isTournamentLocked, getTournamentById } from '../../lib/tournament';
+import { requireAdminTournament } from '../../lib/admin-tournament-context';
 import { withAdmin } from '../../lib/session';
 
 export const prerender = false;
@@ -21,7 +22,7 @@ const PLAYABLE_RESULTS = ['white', 'black', 'draw'] as const;
 
 export const PATCH: APIRoute = async ({ request }) =>
   withAdmin(request, async () => {
-    const tournament = await getActiveTournament();
+    const tournament = await requireAdminTournament(request);
     if (!tournament) {
       return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
     }
@@ -48,7 +49,7 @@ export const PATCH: APIRoute = async ({ request }) =>
     }
 
     const [round] = await db.select().from(rounds).where(eq(rounds.id, game.roundId)).limit(1);
-    if (!round || round.status !== 'active') {
+    if (!round || round.tournamentId !== tournament.id || round.status !== 'active') {
       return new Response(
         JSON.stringify({ error: 'Solo se pueden modificar resultados mientras la ronda está activa' }),
         { status: 400 },

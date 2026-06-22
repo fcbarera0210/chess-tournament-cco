@@ -2,7 +2,8 @@ import type { APIRoute } from 'astro';
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../../lib/db';
 import { rounds, games, players, tournaments } from '../../lib/db/schema';
-import { getActiveTournament, getGamesForRound, isTournamentLocked } from '../../lib/tournament';
+import { getGamesForRound, isTournamentLocked } from '../../lib/tournament';
+import { requireAdminTournament } from '../../lib/admin-tournament-context';
 import { withAdmin } from '../../lib/session';
 import { buildPairingContext, getCheckedInPlayerIds } from '../../lib/pairing-context';
 import { validatePairings } from '../../lib/pairing-validation';
@@ -12,7 +13,7 @@ export const prerender = false;
 
 export const GET: APIRoute = async ({ request }) =>
   withAdmin(request, async () => {
-    const tournament = await getActiveTournament();
+    const tournament = await requireAdminTournament(request);
     if (!tournament) {
       return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
     }
@@ -30,7 +31,7 @@ export const GET: APIRoute = async ({ request }) =>
 
 export const POST: APIRoute = async ({ request }) =>
   withAdmin(request, async () => {
-    const tournament = await getActiveTournament();
+    const tournament = await requireAdminTournament(request);
     if (!tournament) {
       return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
     }

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { AdminButton } from './AdminButton';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
+import { useAdminTournament } from '../../hooks/useAdminTournament';
+import { adminApiUrl } from '../../lib/admin-api';
 
 type Round = {
   id: string;
@@ -9,18 +11,21 @@ type Round = {
 };
 
 export function RoundsList() {
+  const { tournamentId } = useAdminTournament();
   const [rounds, setRounds] = useState<Round[]>([]);
   const { run, isLoading } = useAsyncAction();
 
   useEffect(() => {
-    fetch('/api/rounds')
+    if (!tournamentId) return;
+    fetch(adminApiUrl('/api/rounds', tournamentId))
       .then((r) => r.json())
       .then((d) => setRounds(d.rounds ?? []));
-  }, []);
+  }, [tournamentId]);
 
   async function createRound() {
+    if (!tournamentId) return;
     await run('create', async () => {
-      const res = await fetch('/api/rounds', {
+      const res = await fetch(adminApiUrl('/api/rounds', tournamentId), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'create_round' }),

@@ -3,7 +3,7 @@ import '../styles/global.css';
 import SiteFooter from '../components/astro/SiteFooter.astro';
 import FloatingPiecesBackground from '../components/astro/FloatingPiecesBackground.astro';
 import { MobileNav } from '../components/react/MobileNav';
-import { getActiveTournament } from '../lib/tournament';
+import { SITE_BRAND } from '../lib/site';
 
 interface Props {
   title?: string;
@@ -12,21 +12,29 @@ interface Props {
   kiosk?: boolean;
   dark?: boolean;
   finished?: boolean;
+  tournamentSlug?: string | null;
+  tournamentName?: string;
+  showRegistration?: boolean;
 }
 
-const tournament = await getActiveTournament();
-const tournamentName = tournament?.name ?? 'Chess Tournament Curicó';
-const isFinished = Astro.props.finished ?? tournament?.status === 'finished';
-
 const {
-  title = tournamentName,
-  description = isFinished
-    ? 'Archivo del torneo de ajedrez en Curicó. Clasificación, partidas y galería del evento realizado.'
-    : 'Torneo de ajedrez abierto en Curicó. Inscripción gratuita.',
+  title,
+  description,
   wide = false,
   kiosk = false,
   dark = false,
+  finished = false,
+  tournamentSlug = null,
+  tournamentName = 'Chess Tournament Curicó',
+  showRegistration = false,
 } = Astro.props;
+
+const pageTitle = title ?? tournamentName;
+const pageDescription =
+  description ??
+  (finished
+    ? 'Archivo del torneo de ajedrez en Curicó. Clasificación, partidas y galería del evento realizado.'
+    : 'Torneo de ajedrez abierto en Curicó. Inscripción gratuita.');
 ---
 
 <!doctype html>
@@ -34,7 +42,7 @@ const {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content={description} />
+    <meta name="description" content={pageDescription} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -42,7 +50,7 @@ const {
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Syne:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <title>{title}</title>
+    <title>{pageTitle}</title>
     <meta name="view-transition" content="same-origin" />
   </head>
   <body
@@ -61,36 +69,52 @@ const {
               <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-sm text-white">
                 ♞
               </span>
-              {tournamentName}
+              {SITE_BRAND}
             </a>
             <div class="flex items-center gap-4 text-sm font-medium">
               <div class="hidden items-center gap-4 sm:flex">
                 {
-                  isFinished ? (
-                    <>
-                      <a href="/torneo" class="text-muted hover:text-ink">
-                        Resultados
-                      </a>
-                      <a href="/clasificacion" class="text-muted hover:text-ink">
-                        Clasificación
-                      </a>
-                    </>
+                  tournamentSlug ? (
+                    finished ? (
+                      <>
+                        <a href={`/torneo/${tournamentSlug}`} class="text-muted hover:text-ink">
+                          Resultados
+                        </a>
+                        <a href={`/clasificacion/${tournamentSlug}`} class="text-muted hover:text-ink">
+                          Clasificación
+                        </a>
+                      </>
+                    ) : (
+                      <>
+                        <a href={`/clasificacion/${tournamentSlug}`} class="text-muted hover:text-ink">
+                          Clasificación
+                        </a>
+                        <a href={`/live/${tournamentSlug}`} class="text-muted hover:text-ink">
+                          Live
+                        </a>
+                        {showRegistration && (
+                          <a
+                            href={`/inscripcion/${tournamentSlug}`}
+                            class="btn-pill btn-pill-primary px-4 py-2 text-sm"
+                          >
+                            Inscribirme
+                          </a>
+                        )}
+                      </>
+                    )
                   ) : (
-                    <>
-                      <a href="/clasificacion" class="text-muted hover:text-ink">
-                        Clasificación
-                      </a>
-                      <a href="/live" class="text-muted hover:text-ink">
-                        Live
-                      </a>
-                      <a href="/inscripcion" class="btn-pill btn-pill-primary px-4 py-2 text-sm">
-                        Inscribirme
-                      </a>
-                    </>
+                    <a href="/bases" class="text-muted hover:text-ink">
+                      Bases
+                    </a>
                   )
                 }
               </div>
-              <MobileNav client:load finished={isFinished} />
+              <MobileNav
+                client:load
+                slug={tournamentSlug}
+                finished={finished}
+                showRegistration={showRegistration}
+              />
             </div>
           </nav>
         </header>
@@ -106,7 +130,15 @@ const {
     >
       <slot />
     </main>
-    {!kiosk && <SiteFooter tournamentName={tournamentName} finished={isFinished} />}
+    {
+      !kiosk && (
+        <SiteFooter
+          slug={tournamentSlug}
+          finished={finished}
+          showRegistration={showRegistration}
+        />
+      )
+    }
   </body>
 </html>
 

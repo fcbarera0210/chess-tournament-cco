@@ -1,24 +1,35 @@
 import { useEffect, useState } from 'react';
+import { useAdminTournament } from '../../hooks/useAdminTournament';
+import { adminApiUrl, publicApiUrl } from '../../lib/admin-api';
+import { getTournamentPublicLinks } from '../../lib/tournament-public-links';
 
 export function AdminDashboard() {
+  const { tournamentId, tournament: ctxTournament } = useAdminTournament();
   const [data, setData] = useState<{
-    tournament: { name: string; status: string };
+    tournament: { name: string; status: string; slug: string };
     stats: { registered: number; waitlist: number; checkedIn: number };
   } | null>(null);
   const [round, setRound] = useState<{ roundNumber: number; pendingGames: number } | null>(null);
 
   useEffect(() => {
-    fetch('/api/tournament')
+    if (!tournamentId) return;
+
+    fetch(adminApiUrl('/api/tournament', tournamentId))
       .then((r) => r.json())
       .then(setData);
-    fetch('/api/live')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.round) {
-          setRound({ roundNumber: d.round.roundNumber, pendingGames: d.round.pendingGames });
-        }
-      });
-  }, []);
+
+    if (ctxTournament?.slug) {
+      fetch(publicApiUrl('/api/live', ctxTournament.slug))
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.round) {
+            setRound({ roundNumber: d.round.roundNumber, pendingGames: d.round.pendingGames });
+          } else {
+            setRound(null);
+          }
+        });
+    }
+  }, [tournamentId, ctxTournament?.slug]);
 
   if (!data) return <p className="text-muted">Cargando...</p>;
 
@@ -28,6 +39,9 @@ export function AdminDashboard() {
     live: 'En juego',
     finished: 'Finalizado',
   };
+
+  const slug = data.tournament.slug;
+  const publicLinks = getTournamentPublicLinks(slug, data.tournament.status);
 
   return (
     <div className="space-y-8">
@@ -65,20 +79,17 @@ export function AdminDashboard() {
           { href: '/admin/rondas', label: 'Ver rondas' },
           { href: '/admin/galeria', label: 'Galería de fotos' },
           { href: '/admin/torneo', label: 'Configuración y export' },
-          ...(data.tournament.status === 'finished'
-            ? [{ href: '/torneo', label: 'Archivo público' }]
-            : [
-                { href: '/live', label: 'Monitoreo live' },
-                { href: '/kiosk', label: 'Vista kiosk' },
-              ]),
+          ...publicLinks.map((link) => ({ href: link.href, label: link.label, external: true })),
         ].map((link) => (
           <a
             key={link.href}
             href={link.href}
+            target={'external' in link && link.external ? '_blank' : undefined}
+            rel={'external' in link && link.external ? 'noopener noreferrer' : undefined}
             className="admin-card flex items-center justify-between p-4 font-medium transition hover:bg-bg"
           >
             {link.label}
-            <span className="text-muted">→</span>
+            <span className="text-muted">{'external' in link && link.external ? '↗' : '→'}</span>
           </a>
         ))}
       </div>

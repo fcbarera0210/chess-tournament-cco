@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { pieceSrc, resultWinnerColors, type PieceColor } from '../../lib/chess-pieces';
+import { publicApiUrl } from '../../lib/admin-api';
 
 type Game = {
   id: string;
@@ -94,10 +95,12 @@ function KioskClock() {
 }
 
 function KioskSidebar({
+  slug,
   standingsTop,
   recentResults,
   recentResultsRoundNumber,
 }: {
+  slug: string;
   standingsTop: LiveData['standingsTop'];
   recentResults: RecentResult[];
   recentResultsRoundNumber: number | null;
@@ -117,6 +120,12 @@ function KioskSidebar({
               </li>
             ))}
           </ol>
+          <a
+            href={`/clasificacion/${slug}`}
+            className="mt-3 block text-sm text-white/60 hover:text-white"
+          >
+            Ver tabla completa →
+          </a>
         </div>
       )}
 
@@ -253,16 +262,17 @@ function GameCard({
 }
 
 type Props = {
+  slug: string;
   mode: 'kiosk' | 'live';
   cols?: number;
 };
 
-export function LiveView({ mode, cols = 3 }: Props) {
+export function LiveView({ slug, mode, cols = 3 }: Props) {
   const [data, setData] = useState<LiveData | null>(null);
 
   useEffect(() => {
     const load = () =>
-      fetch('/api/live')
+      fetch(publicApiUrl('/api/live', slug))
         .then((r) => r.json())
         .then(setData)
         .catch(() => {});
@@ -270,7 +280,7 @@ export function LiveView({ mode, cols = 3 }: Props) {
     load();
     const id = setInterval(load, 15000);
     return () => clearInterval(id);
-  }, []);
+  }, [slug]);
 
   const gridCols =
     cols === 2
@@ -342,6 +352,7 @@ export function LiveView({ mode, cols = 3 }: Props) {
                 )}
               </div>
               <KioskSidebar
+                slug={slug}
                 standingsTop={data.standingsTop}
                 recentResults={data.recentResults}
                 recentResultsRoundNumber={data.recentResultsRoundNumber}
@@ -394,7 +405,10 @@ export function LiveView({ mode, cols = 3 }: Props) {
               </li>
             ))}
           </ol>
-          <a href="/clasificacion" className="mt-3 block text-sm text-white/70 hover:text-white">
+          <a
+            href={`/clasificacion/${slug}`}
+            className="mt-3 block text-sm text-white/70 hover:text-white"
+          >
             Ver tabla completa →
           </a>
         </div>
@@ -415,7 +429,7 @@ export function LiveView({ mode, cols = 3 }: Props) {
         )}
 
         <a
-          href="/kiosk"
+          href={`/kiosk/${slug}`}
           className="block rounded-2xl border border-border bg-surface p-4 text-center text-sm font-medium hover:bg-bg"
         >
           Abrir vista kiosk para proyección

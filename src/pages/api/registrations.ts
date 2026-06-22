@@ -2,16 +2,12 @@ import type { APIRoute } from 'astro';
 import { eq } from 'drizzle-orm';
 import { db } from '../../lib/db';
 import { players } from '../../lib/db/schema';
-import {
-  getActiveTournament,
-  getRegistrationStats,
-  isRegistrationOpen,
-} from '../../lib/tournament';
+import { getTournamentBySlug, getRegistrationStats, isRegistrationOpen } from '../../lib/tournament';
 import { checkRateLimit } from '../../lib/rate-limit';
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request, clientAddress }) => {
+export const POST: APIRoute = async ({ request, clientAddress, url }) => {
   const ip = clientAddress ?? 'unknown';
   if (!checkRateLimit(ip)) {
     return new Response(JSON.stringify({ error: 'Demasiados intentos. Espera un momento.' }), {
@@ -20,12 +16,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
-  const tournament = await getActiveTournament();
+  const slug = url.searchParams.get('slug');
+  if (!slug) {
+    return new Response(JSON.stringify({ error: 'Slug requerido' }), { status: 400 });
+  }
+
+  const tournament = await getTournamentBySlug(slug);
   if (!tournament) {
-    return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
+  }
+
+  if (!tournament.publicRegistration) {
+    return new Response(JSON.stringify({ error: 'Inscripciones no disponibles' }), { status: 403 });
   }
 
   let body: {
@@ -106,8 +108,13 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   );
 };
 
-export const GET: APIRoute = async () => {
-  const tournament = await getActiveTournament();
+export const GET: APIRoute = async ({ url }) => {
+  const slug = url.searchParams.get('slug');
+  if (!slug) {
+    return new Response(JSON.stringify({ error: 'Slug requerido' }), { status: 400 });
+  }
+
+  const tournament = await getTournamentBySlug(slug);
   if (!tournament) {
     return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
   }

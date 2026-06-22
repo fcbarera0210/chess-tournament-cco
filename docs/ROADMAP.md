@@ -1,6 +1,6 @@
-# Roadmap — Iteración 2: Multi-torneo
+# Roadmap — Multi-torneo
 
-Documento de referencia para el siguiente ciclo de desarrollo. **No implementado en la iteración actual.**
+**Estado: implementado** (flags `showOnHome` / `publicRegistration`, admin CRUD, rutas por slug, home con destacado + archivos).
 
 ## Motivación
 

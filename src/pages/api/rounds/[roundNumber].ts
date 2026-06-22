@@ -2,14 +2,15 @@ import type { APIRoute } from 'astro';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../../../lib/db';
 import { rounds } from '../../../lib/db/schema';
-import { getActiveTournament, getGamesForRound } from '../../../lib/tournament';
+import { getGamesForRound } from '../../../lib/tournament';
+import { requireAdminTournament } from '../../../lib/admin-tournament-context';
 import { withAdmin } from '../../../lib/session';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request, params }) =>
   withAdmin(request, async () => {
-    const tournament = await getActiveTournament();
+    const tournament = await requireAdminTournament(request);
     if (!tournament) {
       return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
     }

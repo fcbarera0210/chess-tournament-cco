@@ -1,11 +1,13 @@
 import { useState } from 'react';
+import { publicApiUrl } from '../../lib/admin-api';
 
 type Props = {
+  slug: string;
   eventDate: string;
   venue: string;
 };
 
-export function RegistrationForm({ eventDate, venue }: Props) {
+export function RegistrationForm({ slug, eventDate, venue }: Props) {
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [clubLevel, setClubLevel] = useState('');
@@ -20,7 +22,7 @@ export function RegistrationForm({ eventDate, venue }: Props) {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/registrations', {
+      const res = await fetch(publicApiUrl('/api/registrations', slug), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, contact, clubLevel, confirmed }),

@@ -1,39 +1,50 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PillButton from '../../components/astro/PillButton.astro';
-import { getActiveTournament, getRegistrationStats } from '../../lib/tournament';
+import { getTournamentBySlug, getRegistrationStats } from '../../lib/tournament';
 import { RegistrationForm } from '../../components/react/RegistrationForm';
 import { CHESS_SVG_SIZE } from '../../lib/chess-svg-sizes';
 
 export const prerender = false;
 
-const tournament = await getActiveTournament();
-const isFinished = tournament?.status === 'finished';
-const stats = tournament ? await getRegistrationStats(tournament.id) : null;
+const { slug } = Astro.params;
+if (!slug) {
+  return new Response(null, { status: 404 });
+}
 
-const eventDate = tournament
-  ? new Date(tournament.eventDate + 'T12:00:00').toLocaleDateString('es-CL', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    })
-  : 'sábado 20 de junio';
-const venue = tournament?.venue ?? 'Curicó';
+const tournament = await getTournamentBySlug(slug);
+if (!tournament || !tournament.publicRegistration) {
+  return new Response(null, { status: 404 });
+}
+
+const isFinished = tournament.status === 'finished';
+const stats = await getRegistrationStats(tournament.id);
+
+const eventDate = new Date(tournament.eventDate + 'T12:00:00').toLocaleDateString('es-CL', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
+const venue = tournament.venue;
 ---
 
-<BaseLayout title="Inscripción — Chess Tournament Curicó" wide={true} finished={isFinished}>
+<BaseLayout
+  title={`Inscripción — ${tournament.name}`}
+  wide={true}
+  tournamentSlug={tournament.slug}
+  tournamentName={tournament.name}
+  showRegistration={!isFinished && tournament.publicRegistration}
+  finished={isFinished}
+>
   {
     isFinished ? (
       <div class="mx-auto max-w-xl rounded-3xl bg-surface p-10 text-center shadow-lg">
-        <h1 class="font-display text-3xl font-bold">Próximo torneo en preparación</h1>
-        <p class="mt-4 text-muted">
-          Las inscripciones del torneo reciente están cerradas. Estamos organizando nuevos eventos —
-          vuelve pronto para más información.
-        </p>
+        <h1 class="font-display text-3xl font-bold">Inscripciones cerradas</h1>
+        <p class="mt-4 text-muted">Las inscripciones para este torneo ya no están disponibles.</p>
         <div class="mt-8 flex flex-wrap justify-center gap-4">
           <PillButton href="/">Volver al inicio</PillButton>
-          <PillButton href="/torneo" variant="outline">
-            Ver torneo realizado
+          <PillButton href={`/torneo/${slug}`} variant="outline">
+            Ver resultados
           </PillButton>
         </div>
       </div>
@@ -55,7 +66,7 @@ const venue = tournament?.venue ?? 'Curicó';
                 <dt class="text-white/50">Fecha</dt>
                 <dd class="mt-1 text-lg font-semibold capitalize">{eventDate}</dd>
                 <dd class="text-white/80">
-                  {tournament?.eventTimeStart ?? '15:00'} – {tournament?.eventTimeEnd ?? '20:00'}
+                  {tournament.eventTimeStart} – {tournament.eventTimeEnd}
                 </dd>
               </div>
               <div>
@@ -65,19 +76,15 @@ const venue = tournament?.venue ?? 'Curicó';
               <div>
                 <dt class="text-white/50">Formato</dt>
                 <dd class="mt-1 font-semibold">
-                  Varias rondas · {tournament?.timeControl ?? '10+5'}
+                  Varias rondas · {tournament.timeControl}
                 </dd>
               </div>
-              {
-                stats && tournament && (
-                  <div>
-                    <dt class="text-white/50">Cupo</dt>
-                    <dd class="mt-1 font-semibold">
-                      {stats.registered} / {tournament.maxPlayers} plazas
-                    </dd>
-                  </div>
-                )
-              }
+              <div>
+                <dt class="text-white/50">Cupo</dt>
+                <dd class="mt-1 font-semibold">
+                  {stats.registered} / {tournament.maxPlayers} plazas
+                </dd>
+              </div>
             </dl>
           </div>
 
@@ -113,7 +120,7 @@ const venue = tournament?.venue ?? 'Curicó';
         </div>
 
         <div class="bg-surface p-8 md:p-12">
-          <RegistrationForm client:load eventDate={eventDate} venue={venue} />
+          <RegistrationForm client:load slug={slug} eventDate={eventDate} venue={venue} />
         </div>
       </div>
     )

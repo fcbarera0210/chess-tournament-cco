@@ -1,23 +1,86 @@
-import { eq, and, inArray, sql, asc } from 'drizzle-orm';
+import { eq, and, inArray, sql, asc, desc, ne } from 'drizzle-orm';
 import { db } from './db';
 import { tournaments, players, rounds, games } from './db/schema';
 
-export function getTournamentSlug(): string {
-  const fromMeta =
-    typeof import.meta !== 'undefined' && import.meta.env
-      ? import.meta.env.PUBLIC_TOURNAMENT_SLUG
-      : undefined;
-  return fromMeta ?? process.env.PUBLIC_TOURNAMENT_SLUG ?? 'curico-2026';
-}
+const FEATURED_STATUSES = ['registration_open', 'registration_closed', 'live'] as const;
 
-export async function getActiveTournament() {
-  const slug = getTournamentSlug();
+export async function getTournamentBySlug(slug: string) {
   const [tournament] = await db
     .select()
     .from(tournaments)
     .where(eq(tournaments.slug, slug))
     .limit(1);
   return tournament ?? null;
+}
+
+export async function getTournamentById(id: string) {
+  const [tournament] = await db
+    .select()
+    .from(tournaments)
+    .where(eq(tournaments.id, id))
+    .limit(1);
+  return tournament ?? null;
+}
+
+export async function listAdminTournaments() {
+  return db.select().from(tournaments).orderBy(desc(tournaments.createdAt));
+}
+
+export async function getFeaturedTournament() {
+  const candidates = await db
+    .select()
+    .from(tournaments)
+    .where(
+      and(
+        eq(tournaments.showOnHome, true),
+        inArray(tournaments.status, [...FEATURED_STATUSES]),
+      ),
+    )
+    .orderBy(desc(tournaments.eventDate));
+
+  if (candidates.length === 0) return null;
+
+  const open = candidates.find((t) => t.status === 'registration_open');
+  if (open) return open;
+
+  const live = candidates.find((t) => t.status === 'live');
+  if (live) return live;
+
+  return candidates[0] ?? null;
+}
+
+export async function getPublicArchiveTournaments() {
+  return db
+    .select()
+    .from(tournaments)
+    .where(and(eq(tournaments.showOnHome, true), eq(tournaments.status, 'finished')))
+    .orderBy(desc(tournaments.eventDate));
+}
+
+/** Archivo principal del home cuando no hay torneo activo destacado */
+export async function getPrimaryHomeArchive() {
+  const archives = await getPublicArchiveTournaments();
+  if (archives[0]) return archives[0];
+
+  const [fallback] = await db
+    .select()
+    .from(tournaments)
+    .where(eq(tournaments.status, 'finished'))
+    .orderBy(desc(tournaments.eventDate))
+    .limit(1);
+  return fallback ?? null;
+}
+
+export async function slugExists(slug: string, excludeId?: string) {
+  const conditions = [eq(tournaments.slug, slug)];
+  if (excludeId) conditions.push(ne(tournaments.id, excludeId));
+
+  const [row] = await db
+    .select({ id: tournaments.id })
+    .from(tournaments)
+    .where(and(...conditions))
+    .limit(1);
+  return !!row;
 }
 
 export async function getRegistrationStats(tournamentId: string) {
@@ -84,10 +147,18 @@ export function isTournamentLocked(tournament: { status: string }) {
 }
 
 export function canEditFormat(tournament: { status: string }) {
-  return tournament.status === 'draft' || tournament.status === 'registration_open' || tournament.status === 'registration_closed';
+  return (
+    tournament.status === 'draft' ||
+    tournament.status === 'registration_open' ||
+    tournament.status === 'registration_closed'
+  );
 }
 
-export function isRegistrationOpen(tournament: { status: string; maxPlayers: number }, registeredCount: number) {
+export function isRegistrationOpen(
+  tournament: { status: string; maxPlayers: number; publicRegistration: boolean },
+  registeredCount: number,
+) {
+  if (!tournament.publicRegistration) return false;
   if (tournament.status !== 'registration_open') return false;
   return registeredCount < tournament.maxPlayers;
 }

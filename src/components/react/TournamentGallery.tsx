@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { publicApiUrl } from '../../lib/admin-api';
 
 type Photo = {
   id: string;
@@ -6,18 +7,22 @@ type Photo = {
   caption: string | null;
 };
 
-export function TournamentGallery() {
+type Props = {
+  slug: string;
+};
+
+export function TournamentGallery({ slug }: Props) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<Photo | null>(null);
 
   useEffect(() => {
-    fetch('/api/tournament/photos')
+    fetch(publicApiUrl('/api/tournament/photos', slug))
       .then((r) => r.json())
       .then((data) => setPhotos(data.photos ?? []))
       .catch(() => setPhotos([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [slug]);
 
   useEffect(() => {
     if (!lightbox) return;

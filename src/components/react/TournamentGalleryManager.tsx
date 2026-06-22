@@ -3,6 +3,8 @@ import { ImageUploader } from './ImageUploader';
 import { AdminButton } from './AdminButton';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
 import { showAdminToast } from '../../lib/admin-toast';
+import { useAdminTournament } from '../../hooks/useAdminTournament';
+import { adminApiUrl, publicApiUrl } from '../../lib/admin-api';
 
 type Photo = {
   id: string;
@@ -17,6 +19,7 @@ type TournamentInfo = {
 };
 
 export function TournamentGalleryManager() {
+  const { tournamentId, tournament: ctxTournament } = useAdminTournament();
   const [tournament, setTournament] = useState<TournamentInfo | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [pendingUrl, setPendingUrl] = useState('');
@@ -24,21 +27,16 @@ export function TournamentGalleryManager() {
   const { run, isLoading } = useAsyncAction();
 
   async function load() {
-    const [tRes, pRes] = await Promise.all([
-      fetch('/api/tournament'),
-      fetch('/api/tournament/photos'),
-    ]);
-    const tData = await tRes.json();
+    if (!tournamentId || !ctxTournament) return;
+    setTournament({ slug: ctxTournament.slug, name: ctxTournament.name });
+    const pRes = await fetch(publicApiUrl('/api/tournament/photos', ctxTournament.slug));
     const pData = await pRes.json();
-    if (tData.tournament) {
-      setTournament({ slug: tData.tournament.slug, name: tData.tournament.name });
-    }
     setPhotos(pData.photos ?? []);
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    if (tournamentId && ctxTournament) load();
+  }, [tournamentId, ctxTournament?.slug]);
 
   async function addPhoto() {
     if (!pendingUrl.trim()) {
@@ -47,7 +45,7 @@ export function TournamentGalleryManager() {
     }
 
     await run('add-photo', async () => {
-      const res = await fetch('/api/tournament/photos', {
+      const res = await fetch(adminApiUrl('/api/tournament/photos', tournamentId!), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: pendingUrl, caption: pendingCaption }),
@@ -64,7 +62,7 @@ export function TournamentGalleryManager() {
   }
 
   async function updateCaption(id: string, caption: string) {
-    await fetch('/api/tournament/photos', {
+    await fetch(adminApiUrl('/api/tournament/photos', tournamentId!), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, caption }),
@@ -75,7 +73,7 @@ export function TournamentGalleryManager() {
   async function removePhoto(id: string) {
     if (!confirm('¿Eliminar esta foto de la galería?')) return;
     await run(`delete-${id}`, async () => {
-      const res = await fetch('/api/tournament/photos', {
+      const res = await fetch(adminApiUrl('/api/tournament/photos', tournamentId!), {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
@@ -97,12 +95,12 @@ export function TournamentGalleryManager() {
     const other = photos[swapIndex];
 
     await Promise.all([
-      fetch('/api/tournament/photos', {
+      fetch(adminApiUrl('/api/tournament/photos', tournamentId!), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: current.id, sortOrder: other.sortOrder }),
       }),
-      fetch('/api/tournament/photos', {
+      fetch(adminApiUrl('/api/tournament/photos', tournamentId!), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: other.id, sortOrder: current.sortOrder }),

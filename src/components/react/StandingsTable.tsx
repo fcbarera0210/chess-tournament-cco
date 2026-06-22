@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { publicApiUrl } from '../../lib/admin-api';
 
 type Standing = {
   playerId: string;
@@ -18,12 +19,16 @@ type StandingsData = {
   players?: { id: string; name: string; status: string }[];
 };
 
-export function StandingsTable() {
+type Props = {
+  slug: string;
+};
+
+export function StandingsTable({ slug }: Props) {
   const [data, setData] = useState<StandingsData | null>(null);
 
   useEffect(() => {
     const load = () =>
-      fetch('/api/standings')
+      fetch(publicApiUrl('/api/standings', slug))
         .then((r) => r.json())
         .then(setData)
         .catch(() => setData({ error: 'Error de conexión' }));
@@ -31,7 +36,7 @@ export function StandingsTable() {
     load();
     const id = setInterval(load, 30000);
     return () => clearInterval(id);
-  }, []);
+  }, [slug]);
 
   if (!data) {
     return <p className="text-center text-muted">Cargando clasificación...</p>;
@@ -71,7 +76,7 @@ export function StandingsTable() {
         {registered.length === 0 && (
           <p className="text-center text-white/50">
             Aún no hay inscripciones.{' '}
-            <a href="/inscripcion" className="text-white underline">
+            <a href={`/inscripcion/${slug}`} className="text-white underline">
               ¡Sé el primero!
             </a>
           </p>

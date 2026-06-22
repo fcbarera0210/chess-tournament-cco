@@ -50,6 +50,8 @@ export const tournaments = pgTable('tournaments', {
   timeControl: text('time_control').notNull().default('10+5'),
   status: tournamentStatusEnum('status').notNull().default('registration_open'),
   waitlistEnabled: boolean('waitlist_enabled').notNull().default(true),
+  showOnHome: boolean('show_on_home').notNull().default(false),
+  publicRegistration: boolean('public_registration').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

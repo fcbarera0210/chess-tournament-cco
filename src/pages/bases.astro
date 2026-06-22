@@ -1,11 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getActiveTournament, getRegistrationStats } from '../lib/tournament';
+import { getFeaturedTournament, getRegistrationStats } from '../lib/tournament';
 import { eventLegal } from '../lib/event-legal';
 
 export const prerender = false;
 
-const tournament = await getActiveTournament();
+const tournament = await getFeaturedTournament();
 const stats = tournament ? await getRegistrationStats(tournament.id) : null;
 
 const tournamentName = tournament?.name ?? 'Chess Tournament Curicó';

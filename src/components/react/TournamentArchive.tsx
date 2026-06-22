@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TournamentGallery } from './TournamentGallery';
+import { publicApiUrl } from '../../lib/admin-api';
 
 type Standing = {
   playerId: string;
@@ -60,16 +61,16 @@ function formatEventDate(dateStr: string): string {
   });
 }
 
-export function TournamentArchive() {
+export function TournamentArchive({ slug }: { slug: string }) {
   const [data, setData] = useState<ArchiveData | null>(null);
   const [openRound, setOpenRound] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch('/api/tournament/archive')
+    fetch(publicApiUrl('/api/tournament/archive', slug))
       .then((r) => r.json())
       .then(setData)
       .catch(() => setData({ error: 'Error de conexión' }));
-  }, []);
+  }, [slug]);
 
   if (!data) {
     return <p className="text-center text-muted">Cargando archivo del torneo...</p>;
@@ -217,7 +218,7 @@ export function TournamentArchive() {
 
       <section>
         <h2 className="font-display mb-6 text-2xl font-bold md:text-3xl">Galería</h2>
-        <TournamentGallery />
+        <TournamentGallery slug={slug} />
       </section>
     </div>
   );

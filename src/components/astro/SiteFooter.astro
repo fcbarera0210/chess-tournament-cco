@@ -1,10 +1,13 @@
 ---
+import { SITE_BRAND } from '../../lib/site';
+
 interface Props {
-  tournamentName?: string;
+  slug?: string | null;
   finished?: boolean;
+  showRegistration?: boolean;
 }
 
-const { tournamentName = 'Chess Tournament Curicó', finished = false } = Astro.props;
+const { slug = null, finished = false, showRegistration = false } = Astro.props;
 ---
 
 <footer class="relative z-10 section-dark mt-auto py-12">
@@ -12,24 +15,30 @@ const { tournamentName = 'Chess Tournament Curicó', finished = false } = Astro.
     <div class="flex flex-col items-center gap-6 md:flex-row md:justify-between">
       <div class="flex items-center gap-2">
         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-lg text-ink">♞</span>
-        <span class="font-display font-bold">{tournamentName}</span>
+        <span class="font-display font-bold">{SITE_BRAND}</span>
       </div>
       <nav class="flex flex-wrap justify-center gap-6 text-sm text-white/70">
         {
-          finished ? (
-            <>
-              <a href="/torneo" class="hover:text-white">Resultados</a>
-              <a href="/clasificacion" class="hover:text-white">Clasificación</a>
-              <a href="/bases" class="hover:text-white">Bases</a>
-            </>
+          slug ? (
+            finished ? (
+              <>
+                <a href={`/torneo/${slug}`} class="hover:text-white">Resultados</a>
+                <a href={`/clasificacion/${slug}`} class="hover:text-white">Clasificación</a>
+                <a href="/bases" class="hover:text-white">Bases</a>
+              </>
+            ) : (
+              <>
+                {showRegistration && (
+                  <a href={`/inscripcion/${slug}`} class="hover:text-white">Inscripción</a>
+                )}
+                <a href={`/clasificacion/${slug}`} class="hover:text-white">Clasificación</a>
+                <a href="/bases" class="hover:text-white">Bases</a>
+                <a href={`/live/${slug}`} class="hover:text-white">Live</a>
+                <a href={`/kiosk/${slug}`} class="hover:text-white">Kiosk</a>
+              </>
+            )
           ) : (
-            <>
-              <a href="/inscripcion" class="hover:text-white">Inscripción</a>
-              <a href="/clasificacion" class="hover:text-white">Clasificación</a>
-              <a href="/bases" class="hover:text-white">Bases</a>
-              <a href="/live" class="hover:text-white">Live</a>
-              <a href="/kiosk" class="hover:text-white">Kiosk</a>
-            </>
+            <a href="/bases" class="hover:text-white">Bases</a>
           )
         }
       </nav>

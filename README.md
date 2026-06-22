@@ -1,6 +1,6 @@
 # Chess Tournament Curicó
 
-Plataforma web para el torneo de ajedrez en Curicó: landing, inscripciones, panel admin móvil, archivo del torneo realizado y vistas en vivo (`/kiosk`, `/live`).
+Plataforma web multi-torneo para eventos de ajedrez en Curicó: landing con torneo destacado, inscripciones por slug, panel admin con selector de contexto, archivos públicos y vistas en vivo.
 
 Repositorio: [github.com/fcbarera0210/chess-tournament-cco](https://github.com/fcbarera0210/chess-tournament-cco)
 
@@ -40,10 +40,11 @@ DATABASE_URL=postgresql://...
 AUTH_SECRET=<genera con: openssl rand -base64 32>
 ADMIN_SEED_USERNAME=tu_usuario
 ADMIN_SEED_PASSWORD=tu_contraseña_segura
-PUBLIC_TOURNAMENT_SLUG=curico-2026
 BLOB_READ_WRITE_TOKEN=vercel_blob_...
 BLOB_STORE_ID=store_...
 ```
+
+Opcional para scripts de backup: `PUBLIC_TOURNAMENT_SLUG=curico-2026` (fallback si no usas `--slug`).
 
 4. Aplica el esquema a Neon:
 
@@ -76,15 +77,25 @@ Abre [http://localhost:4321](http://localhost:4321).
 
 | Ruta | Descripción |
 |------|-------------|
-| `/` | Landing pública (archivo si el torneo está finalizado) |
-| `/torneo` | Archivo del torneo: clasificación, partidas, galería |
-| `/inscripcion` | Formulario de registro (o aviso si el torneo finalizó) |
-| `/clasificacion` | Tabla de posiciones |
-| `/kiosk` | Vista proyección (redirige si el torneo finalizó) |
-| `/live` | Monitoreo organizadores (redirige si el torneo finalizó) |
+| `/` | Home: torneo destacado + archivos de torneos finalizados |
+| `/torneo/{slug}` | Archivo: clasificación, partidas, galería |
+| `/inscripcion/{slug}` | Formulario de registro (solo si `publicRegistration`) |
+| `/clasificacion/{slug}` | Tabla de posiciones |
+| `/live/{slug}` | Monitoreo en vivo |
+| `/kiosk/{slug}` | Vista proyección |
 | `/admin` | Panel de gestión (requiere login) |
-| `/admin/galeria` | Subir y ordenar fotos del torneo |
+| `/admin/torneos` | Listado y creación de torneos |
+| `/admin/galeria` | Galería del torneo seleccionado |
 | `/admin/login` | Inicio de sesión |
+
+Las rutas sin slug (`/torneo`, `/inscripcion`, etc.) ya no existen — responden 404.
+
+## Multi-torneo
+
+- **Torneo destacado**: único torneo con `showOnHome=true` y estado activo; aparece en el home con CTAs.
+- **Torneos internos**: `showOnHome=false` + `publicRegistration=false` — solo visibles en admin.
+- **Archivos públicos**: torneos `finished` con `showOnHome=true` listados en home → `/torneo/{slug}`.
+- **Selector admin**: el header del panel guarda el torneo activo en cookie; todas las pantallas operan sobre ese contexto.
 
 ## Cerrar y archivar un torneo
 
@@ -96,10 +107,10 @@ npm run db:backup
 
 Guarda un JSON en `backups/` con jugadores, rondas y partidas. También recomendamos un snapshot desde la consola de Neon.
 
-2. En `/admin/torneo`, pulsa **Finalizado**. Esto:
+2. En `/admin/torneo` (con el torneo correcto seleccionado), pulsa **Finalizado**. Esto:
    - Protege los datos contra reinicios y edición de rondas.
-   - Cambia el home y la navegación al modo archivo.
-   - Redirige `/live` y `/kiosk` a `/torneo`.
+   - Si `showOnHome=true`, el torneo aparece en la sección de archivos del home.
+   - Redirige `/live/{slug}` y `/kiosk/{slug}` al archivo.
 
 3. Sube fotos en `/admin/galeria` (se optimizan a WebP en el navegador y se guardan en Vercel Blob).
 
@@ -110,7 +121,7 @@ Guarda un JSON en `backups/` con jugadores, rondas y partidas. También recomend
 1. **Check-in** de jugadores en `/admin/jugadores`.
 2. **Crear rondas** en `/admin/rondas` → emparejamientos y activar.
 3. **Resultados** desde el celular en la misma pantalla de ronda.
-4. Abre `/kiosk` en notebooks para que todos vean el estado.
+4. Abre `/kiosk/{slug}` en notebooks para que todos vean el estado.
 
 ## Scripts
 
@@ -120,7 +131,7 @@ Guarda un JSON en `backups/` con jugadores, rondas y partidas. También recomend
 | `npm run build` | Build de producción |
 | `npm run db:push` | Sincroniza esquema con Neon |
 | `npm run db:seed` | Crea torneo + admin inicial |
-| `npm run db:backup` | Exporta JSON del torneo actual |
+| `npm run db:backup` | Exporta JSON (`--slug nombre` o `--all` para todos) |
 | `npm run db:generate` | Genera migraciones Drizzle |
 
 ## Roadmap

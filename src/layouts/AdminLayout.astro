@@ -3,6 +3,7 @@ import '../styles/global.css';
 import { AdminSignOut } from '../components/react/AdminSignOut';
 import { AdminMobileNav } from '../components/react/AdminMobileNav';
 import { AdminToastHost } from '../components/react/AdminToastHost';
+import { AdminTournamentSelector } from '../components/react/AdminTournamentSelector';
 
 const pathname = Astro.url.pathname;
 
@@ -31,15 +32,18 @@ function navClass(href: string) {
     <header class="section-dark sticky top-0 z-50 border-b border-white/10">
       <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4">
         <a href="/admin" class="font-display text-lg font-bold text-white">Panel admin</a>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="hidden sm:block">
+            <AdminTournamentSelector client:load />
+          </div>
           <nav class="hidden flex-wrap gap-1 sm:flex">
             <a href="/admin" class={navClass('/admin')}>Dashboard</a>
+            <a href="/admin/torneos" class={navClass('/admin/torneos')}>Torneos</a>
             <a href="/admin/jugadores" class={navClass('/admin/jugadores')}>Jugadores</a>
-            <a href="/admin/torneo" class={navClass('/admin/torneo')}>Torneo</a>
+            <a href="/admin/torneo" class={navClass('/admin/torneo')}>Config</a>
             <a href="/admin/rondas" class={navClass('/admin/rondas')}>Rondas</a>
             <a href="/admin/galeria" class={navClass('/admin/galeria')}>Galería</a>
             <a href="/admin/usuarios" class={navClass('/admin/usuarios')}>Admins</a>
-            <a href="/live" class="admin-nav-link">Live</a>
             <a href="/" class="admin-nav-link text-white/50">Sitio público</a>
           </nav>
           <div class="hidden sm:block">
