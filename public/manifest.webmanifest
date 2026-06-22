@@ -1,0 +1,19 @@
+{
+  "name": "Reloj de ajedrez",
+  "short_name": "Reloj",
+  "description": "Reloj de ajedrez digital con presets y modo personalizado. Funciona sin conexión.",
+  "start_url": "/reloj",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#141414",
+  "theme_color": "#141414",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

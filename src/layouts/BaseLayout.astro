@@ -92,6 +92,9 @@ const pageDescription =
                         <a href={`/live/${tournamentSlug}`} class="text-muted hover:text-ink">
                           Live
                         </a>
+                        <a href="/reloj" class="text-muted hover:text-ink">
+                          Reloj
+                        </a>
                         {showRegistration && (
                           <a
                             href={`/inscripcion/${tournamentSlug}`}
@@ -103,9 +106,14 @@ const pageDescription =
                       </>
                     )
                   ) : (
-                    <a href="/bases" class="text-muted hover:text-ink">
-                      Bases
-                    </a>
+                    <>
+                      <a href="/bases" class="text-muted hover:text-ink">
+                        Bases
+                      </a>
+                      <a href="/reloj" class="text-muted hover:text-ink">
+                        Reloj
+                      </a>
+                    </>
                   )
                 }
               </div>

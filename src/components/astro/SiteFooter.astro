@@ -25,6 +25,7 @@ const { slug = null, finished = false, showRegistration = false } = Astro.props;
                 <a href={`/torneo/${slug}`} class="hover:text-white">Resultados</a>
                 <a href={`/clasificacion/${slug}`} class="hover:text-white">Clasificación</a>
                 <a href="/bases" class="hover:text-white">Bases</a>
+                <a href="/reloj" class="hover:text-white">Reloj</a>
               </>
             ) : (
               <>
@@ -35,10 +36,14 @@ const { slug = null, finished = false, showRegistration = false } = Astro.props;
                 <a href="/bases" class="hover:text-white">Bases</a>
                 <a href={`/live/${slug}`} class="hover:text-white">Live</a>
                 <a href={`/kiosk/${slug}`} class="hover:text-white">Kiosk</a>
+                <a href="/reloj" class="hover:text-white">Reloj</a>
               </>
             )
           ) : (
-            <a href="/bases" class="hover:text-white">Bases</a>
+            <>
+              <a href="/bases" class="hover:text-white">Bases</a>
+              <a href="/reloj" class="hover:text-white">Reloj</a>
+            </>
           )
         }
       </nav>

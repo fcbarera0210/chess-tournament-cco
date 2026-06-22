@@ -16,11 +16,15 @@ export function MobileNav({ slug = null, finished = false, showRegistration = fa
       : [
           { href: `/clasificacion/${slug}`, label: 'Clasificación' },
           { href: `/live/${slug}`, label: 'Live' },
+          { href: '/reloj', label: 'Reloj' },
           ...(showRegistration
             ? [{ href: `/inscripcion/${slug}`, label: 'Inscribirme', primary: true }]
             : []),
         ]
-    : [{ href: '/bases', label: 'Bases' }];
+    : [
+        { href: '/bases', label: 'Bases' },
+        { href: '/reloj', label: 'Reloj' },
+      ];
 
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);

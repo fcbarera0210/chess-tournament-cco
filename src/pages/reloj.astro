@@ -1,0 +1,10 @@
+---
+import ClockLayout from '../layouts/ClockLayout.astro';
+import { ChessClock } from '../components/react/ChessClock';
+
+export const prerender = true;
+---
+
+<ClockLayout>
+  <ChessClock client:load />
+</ClockLayout>
