@@ -1,6 +1,6 @@
 # Chess Tournament Curicó
 
-Plataforma web para el torneo de ajedrez en Curicó: landing, inscripciones, panel admin móvil y vistas en vivo (`/kiosk`, `/live`).
+Plataforma web para el torneo de ajedrez en Curicó: landing, inscripciones, panel admin móvil, archivo del torneo realizado y vistas en vivo (`/kiosk`, `/live`).
 
 Repositorio: [github.com/fcbarera0210/chess-tournament-cco](https://github.com/fcbarera0210/chess-tournament-cco)
 
@@ -9,6 +9,7 @@ Repositorio: [github.com/fcbarera0210/chess-tournament-cco](https://github.com/f
 - **Astro 6** + React (islas)
 - **Tailwind CSS 4**
 - **Neon PostgreSQL** + Drizzle ORM
+- **Vercel Blob** (galería de fotos)
 - **Auth.js** (credenciales, multi-admin)
 - **Vercel** (deploy)
 
@@ -16,7 +17,7 @@ Repositorio: [github.com/fcbarera0210/chess-tournament-cco](https://github.com/f
 
 - Node.js >= 22.12
 - Cuenta [Neon](https://neon.tech) con base PostgreSQL
-- Cuenta [Vercel](https://vercel.com)
+- Cuenta [Vercel](https://vercel.com) con Blob Storage
 
 ## Configuración local
 
@@ -40,6 +41,8 @@ AUTH_SECRET=<genera con: openssl rand -base64 32>
 ADMIN_SEED_USERNAME=tu_usuario
 ADMIN_SEED_PASSWORD=tu_contraseña_segura
 PUBLIC_TOURNAMENT_SLUG=curico-2026
+BLOB_READ_WRITE_TOKEN=vercel_blob_...
+BLOB_STORE_ID=store_...
 ```
 
 4. Aplica el esquema a Neon:
@@ -73,21 +76,41 @@ Abre [http://localhost:4321](http://localhost:4321).
 
 | Ruta | Descripción |
 |------|-------------|
-| `/` | Landing pública |
-| `/inscripcion` | Formulario de registro |
+| `/` | Landing pública (archivo si el torneo está finalizado) |
+| `/torneo` | Archivo del torneo: clasificación, partidas, galería |
+| `/inscripcion` | Formulario de registro (o aviso si el torneo finalizó) |
 | `/clasificacion` | Tabla de posiciones |
-| `/kiosk` | Vista proyección (solo lectura, mesas grandes) |
-| `/live` | Monitoreo organizadores (solo lectura) |
+| `/kiosk` | Vista proyección (redirige si el torneo finalizó) |
+| `/live` | Monitoreo organizadores (redirige si el torneo finalizó) |
 | `/admin` | Panel de gestión (requiere login) |
+| `/admin/galeria` | Subir y ordenar fotos del torneo |
 | `/admin/login` | Inicio de sesión |
+
+## Cerrar y archivar un torneo
+
+1. **Backup** (obligatorio antes de cambios en producción):
+
+```bash
+npm run db:backup
+```
+
+Guarda un JSON en `backups/` con jugadores, rondas y partidas. También recomendamos un snapshot desde la consola de Neon.
+
+2. En `/admin/torneo`, pulsa **Finalizado**. Esto:
+   - Protege los datos contra reinicios y edición de rondas.
+   - Cambia el home y la navegación al modo archivo.
+   - Redirige `/live` y `/kiosk` a `/torneo`.
+
+3. Sube fotos en `/admin/galeria` (se optimizan a WebP en el navegador y se guardan en Vercel Blob).
+
+4. Exporta datos completos (incluye contacto de jugadores) con **Exportar CSV (ZIP)** en `/admin/torneo`.
 
 ## Operación el día del evento
 
 1. **Check-in** de jugadores en `/admin/jugadores`.
-2. **Iniciar torneo** en `/admin/torneo` → crea ronda 1.
-3. **Emparejamientos** en `/admin/rondas/1` → guardar y activar.
-4. **Resultados** desde el celular en la misma pantalla de ronda.
-5. Abre `/kiosk` en notebooks para que todos vean el estado.
+2. **Crear rondas** en `/admin/rondas` → emparejamientos y activar.
+3. **Resultados** desde el celular en la misma pantalla de ronda.
+4. Abre `/kiosk` en notebooks para que todos vean el estado.
 
 ## Scripts
 
@@ -97,10 +120,16 @@ Abre [http://localhost:4321](http://localhost:4321).
 | `npm run build` | Build de producción |
 | `npm run db:push` | Sincroniza esquema con Neon |
 | `npm run db:seed` | Crea torneo + admin inicial |
+| `npm run db:backup` | Exporta JSON del torneo actual |
 | `npm run db:generate` | Genera migraciones Drizzle |
+
+## Roadmap
+
+Ver [docs/ROADMAP.md](docs/ROADMAP.md) para la iteración 2 (multi-torneo).
 
 ## Seguridad
 
 - No commitees `.env.local` ni credenciales.
 - Las contraseñas de admin se almacenan con bcrypt.
 - Crea admins adicionales desde `/admin/usuarios` una vez autenticado.
+- Los datos de torneos finalizados no pueden reiniciarse desde el panel.

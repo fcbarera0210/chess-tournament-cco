@@ -11,14 +11,18 @@ interface Props {
   wide?: boolean;
   kiosk?: boolean;
   dark?: boolean;
+  finished?: boolean;
 }
 
 const tournament = await getActiveTournament();
 const tournamentName = tournament?.name ?? 'Chess Tournament Curicó';
+const isFinished = Astro.props.finished ?? tournament?.status === 'finished';
 
 const {
   title = tournamentName,
-  description = 'Torneo de ajedrez abierto en Curicó. Inscripción gratuita.',
+  description = isFinished
+    ? 'Archivo del torneo de ajedrez en Curicó. Clasificación, partidas y galería del evento realizado.'
+    : 'Torneo de ajedrez abierto en Curicó. Inscripción gratuita.',
   wide = false,
   kiosk = false,
   dark = false,
@@ -61,17 +65,32 @@ const {
             </a>
             <div class="flex items-center gap-4 text-sm font-medium">
               <div class="hidden items-center gap-4 sm:flex">
-                <a href="/clasificacion" class="text-muted hover:text-ink">
-                  Clasificación
-                </a>
-                <a href="/live" class="text-muted hover:text-ink">
-                  Live
-                </a>
-                <a href="/inscripcion" class="btn-pill btn-pill-primary px-4 py-2 text-sm">
-                  Inscribirme
-                </a>
+                {
+                  isFinished ? (
+                    <>
+                      <a href="/torneo" class="text-muted hover:text-ink">
+                        Resultados
+                      </a>
+                      <a href="/clasificacion" class="text-muted hover:text-ink">
+                        Clasificación
+                      </a>
+                    </>
+                  ) : (
+                    <>
+                      <a href="/clasificacion" class="text-muted hover:text-ink">
+                        Clasificación
+                      </a>
+                      <a href="/live" class="text-muted hover:text-ink">
+                        Live
+                      </a>
+                      <a href="/inscripcion" class="btn-pill btn-pill-primary px-4 py-2 text-sm">
+                        Inscribirme
+                      </a>
+                    </>
+                  )
+                }
               </div>
-              <MobileNav client:load />
+              <MobileNav client:load finished={isFinished} />
             </div>
           </nav>
         </header>
@@ -87,7 +106,7 @@ const {
     >
       <slot />
     </main>
-    {!kiosk && <SiteFooter tournamentName={tournamentName} />}
+    {!kiosk && <SiteFooter tournamentName={tournamentName} finished={isFinished} />}
   </body>
 </html>
 

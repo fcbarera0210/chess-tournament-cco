@@ -1,6 +1,14 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { LiveView } from '../components/react/LiveView';
+import { getActiveTournament } from '../lib/tournament';
+
+export const prerender = false;
+
+const tournament = await getActiveTournament();
+if (tournament?.status === 'finished') {
+  return Astro.redirect('/torneo');
+}
 ---
 
 <BaseLayout title="Live — Chess Tournament Curicó" wide={true}>

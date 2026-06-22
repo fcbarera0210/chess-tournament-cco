@@ -87,8 +87,27 @@ export function TournamentConfig() {
     tournament.status === 'draft' ||
     tournament.status === 'registration_open' ||
     tournament.status === 'registration_closed';
-  const saving = isLoading('save-blur') || isLoading('format') || isLoading('registration');
+  const isFinished = tournament.status === 'finished';
+  const saving = isLoading('save-blur') || isLoading('format') || isLoading('registration') || isLoading('finished');
   const resetting = isLoading('reset-rounds') || isLoading('reset-full');
+
+  async function exportData() {
+    await run('export', async () => {
+      const res = await fetch('/api/tournament/export');
+      if (!res.ok) {
+        setMessage('Error al exportar datos');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${tournament.slug}-export.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Exportación descargada');
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -97,7 +116,8 @@ export function TournamentConfig() {
           className={`text-sm ${
             message === 'Guardado' ||
             message === 'Rondas reiniciadas' ||
-            message === 'Torneo reiniciado por completo'
+            message === 'Torneo reiniciado por completo' ||
+            message === 'Exportación descargada'
               ? 'text-finished'
               : 'text-muted'
           }`}
@@ -223,11 +243,11 @@ export function TournamentConfig() {
         )}
 
         <div>
-          <span className="text-sm font-medium">Inscripciones</span>
-          <div className="mt-2 flex gap-2">
+          <span className="text-sm font-medium">Estado del torneo</span>
+          <div className="mt-2 flex flex-wrap gap-2">
             <button
               type="button"
-              disabled={isLoading('registration')}
+              disabled={isLoading('registration') || isFinished}
               onClick={() => save({ status: 'registration_open' }, 'registration')}
               className={
                 tournament.status === 'registration_open'
@@ -235,11 +255,11 @@ export function TournamentConfig() {
                   : 'admin-chip admin-chip-inactive'
               }
             >
-              Abiertas
+              Inscripciones abiertas
             </button>
             <button
               type="button"
-              disabled={isLoading('registration')}
+              disabled={isLoading('registration') || isFinished}
               onClick={() => save({ status: 'registration_closed' }, 'registration')}
               className={
                 tournament.status === 'registration_closed'
@@ -247,12 +267,49 @@ export function TournamentConfig() {
                   : 'admin-chip admin-chip-inactive'
               }
             >
-              Cerradas
+              Inscripciones cerradas
+            </button>
+            <button
+              type="button"
+              disabled={isLoading('finished') || isFinished}
+              onClick={() => {
+                if (
+                  !confirm(
+                    '¿Marcar el torneo como finalizado? Los datos quedarán protegidos y la web mostrará el archivo público.',
+                  )
+                ) {
+                  return;
+                }
+                save({ status: 'finished' }, 'finished');
+              }}
+              className={
+                tournament.status === 'finished'
+                  ? 'admin-chip admin-chip-active'
+                  : 'admin-chip admin-chip-inactive'
+              }
+            >
+              Finalizado
             </button>
           </div>
+          {isFinished && (
+            <p className="mt-2 text-sm text-finished">
+              Torneo archivado. Los datos están protegidos contra reinicios y edición de rondas.
+            </p>
+          )}
         </div>
       </div>
 
+      <div className="admin-card p-5">
+        <h2 className="font-display text-lg font-bold">Exportar datos</h2>
+        <p className="mt-2 text-sm text-muted">
+          Descarga clasificación, partidas y jugadores (con contacto) en un archivo ZIP.
+        </p>
+        <AdminButton className="mt-4" loading={isLoading('export')} onClick={exportData}>
+          Exportar CSV (ZIP)
+        </AdminButton>
+      </div>
+
+      {!isFinished && (
       <div className="admin-card p-5">
         <h2 className="font-display text-lg font-bold">Zona de pruebas</h2>
         <p className="mt-2 text-sm text-muted">
@@ -267,6 +324,7 @@ export function TournamentConfig() {
           Reiniciar torneo
         </AdminButton>
       </div>
+      )}
 
       {resetModalOpen && (
         <div

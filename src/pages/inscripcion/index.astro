@@ -1,12 +1,14 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { RegistrationForm } from '../../components/react/RegistrationForm';
+import PillButton from '../../components/astro/PillButton.astro';
 import { getActiveTournament, getRegistrationStats } from '../../lib/tournament';
+import { RegistrationForm } from '../../components/react/RegistrationForm';
 import { CHESS_SVG_SIZE } from '../../lib/chess-svg-sizes';
 
 export const prerender = false;
 
 const tournament = await getActiveTournament();
+const isFinished = tournament?.status === 'finished';
 const stats = tournament ? await getRegistrationStats(tournament.id) : null;
 
 const eventDate = tournament
@@ -19,85 +21,101 @@ const eventDate = tournament
 const venue = tournament?.venue ?? 'Curicó';
 ---
 
-<BaseLayout title="Inscripción — Chess Tournament Curicó" wide={true}>
-  <div class="overflow-hidden rounded-3xl shadow-xl lg:grid lg:grid-cols-2">
-    <!-- Panel oscuro -->
-    <div class="section-dark relative flex flex-col justify-between p-8 md:p-12">
-      <div>
-        <a href="/" class="text-sm text-white/60 hover:text-white">← Volver</a>
-        <h1 class="font-display mt-6 text-3xl font-bold md:text-4xl">Inscripción al torneo</h1>
-        <p class="mt-3 text-white/70">Gratuita y abierta a todos · cupo limitado</p>
-        <p class="mt-2 text-sm text-white/50">
-          <a href="/bases" class="underline-offset-2 hover:text-white hover:underline">
-            Ver bases y privacidad
-          </a>
+<BaseLayout title="Inscripción — Chess Tournament Curicó" wide={true} finished={isFinished}>
+  {
+    isFinished ? (
+      <div class="mx-auto max-w-xl rounded-3xl bg-surface p-10 text-center shadow-lg">
+        <h1 class="font-display text-3xl font-bold">Próximo torneo en preparación</h1>
+        <p class="mt-4 text-muted">
+          Las inscripciones del torneo reciente están cerradas. Estamos organizando nuevos eventos —
+          vuelve pronto para más información.
         </p>
+        <div class="mt-8 flex flex-wrap justify-center gap-4">
+          <PillButton href="/">Volver al inicio</PillButton>
+          <PillButton href="/torneo" variant="outline">
+            Ver torneo realizado
+          </PillButton>
+        </div>
+      </div>
+    ) : (
+      <div class="overflow-hidden rounded-3xl shadow-xl lg:grid lg:grid-cols-2">
+        <div class="section-dark relative flex flex-col justify-between p-8 md:p-12">
+          <div>
+            <a href="/" class="text-sm text-white/60 hover:text-white">← Volver</a>
+            <h1 class="font-display mt-6 text-3xl font-bold md:text-4xl">Inscripción al torneo</h1>
+            <p class="mt-3 text-white/70">Gratuita y abierta a todos · cupo limitado</p>
+            <p class="mt-2 text-sm text-white/50">
+              <a href="/bases" class="underline-offset-2 hover:text-white hover:underline">
+                Ver bases y privacidad
+              </a>
+            </p>
 
-        <dl class="mt-10 space-y-6 text-sm">
-          <div>
-            <dt class="text-white/50">Fecha</dt>
-            <dd class="mt-1 text-lg font-semibold capitalize">{eventDate}</dd>
-            <dd class="text-white/80">
-              {tournament?.eventTimeStart ?? '15:00'} – {tournament?.eventTimeEnd ?? '20:00'}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-white/50">Lugar</dt>
-            <dd class="mt-1 text-lg font-semibold">{venue}</dd>
-          </div>
-          <div>
-            <dt class="text-white/50">Formato</dt>
-            <dd class="mt-1 font-semibold">
-              Varias rondas · {tournament?.timeControl ?? '10+5'}
-            </dd>
-          </div>
-          {
-            stats && tournament && (
+            <dl class="mt-10 space-y-6 text-sm">
               <div>
-                <dt class="text-white/50">Cupo</dt>
-                <dd class="mt-1 font-semibold">
-                  {stats.registered} / {tournament.maxPlayers} plazas
+                <dt class="text-white/50">Fecha</dt>
+                <dd class="mt-1 text-lg font-semibold capitalize">{eventDate}</dd>
+                <dd class="text-white/80">
+                  {tournament?.eventTimeStart ?? '15:00'} – {tournament?.eventTimeEnd ?? '20:00'}
                 </dd>
               </div>
-            )
-          }
-        </dl>
-      </div>
+              <div>
+                <dt class="text-white/50">Lugar</dt>
+                <dd class="mt-1 text-lg font-semibold">{venue}</dd>
+              </div>
+              <div>
+                <dt class="text-white/50">Formato</dt>
+                <dd class="mt-1 font-semibold">
+                  Varias rondas · {tournament?.timeControl ?? '10+5'}
+                </dd>
+              </div>
+              {
+                stats && tournament && (
+                  <div>
+                    <dt class="text-white/50">Cupo</dt>
+                    <dd class="mt-1 font-semibold">
+                      {stats.registered} / {tournament.maxPlayers} plazas
+                    </dd>
+                  </div>
+                )
+              }
+            </dl>
+          </div>
 
-      <div class="mt-12 flex items-end justify-center gap-6 px-2 sm:gap-10">
-        <img
-          src="/images/chess/w-king.svg"
-          alt=""
-          width={CHESS_SVG_SIZE['w-king'].width}
-          height={CHESS_SVG_SIZE['w-king'].height}
-          loading="lazy"
-          class="h-16 w-auto shrink-0"
-          aria-hidden="true"
-        />
-        <img
-          src="/images/chess/b-pawn.svg"
-          alt=""
-          width={CHESS_SVG_SIZE['b-pawn'].width}
-          height={CHESS_SVG_SIZE['b-pawn'].height}
-          loading="lazy"
-          class="h-12 w-auto shrink-0 opacity-90"
-          aria-hidden="true"
-        />
-        <img
-          src="/images/chess/w-queen.svg"
-          alt=""
-          width={CHESS_SVG_SIZE['w-queen'].width}
-          height={CHESS_SVG_SIZE['w-queen'].height}
-          loading="lazy"
-          class="h-20 w-auto shrink-0"
-          aria-hidden="true"
-        />
-      </div>
-    </div>
+          <div class="mt-12 flex items-end justify-center gap-6 px-2 sm:gap-10">
+            <img
+              src="/images/chess/w-king.svg"
+              alt=""
+              width={CHESS_SVG_SIZE['w-king'].width}
+              height={CHESS_SVG_SIZE['w-king'].height}
+              loading="lazy"
+              class="h-16 w-auto shrink-0"
+              aria-hidden="true"
+            />
+            <img
+              src="/images/chess/b-pawn.svg"
+              alt=""
+              width={CHESS_SVG_SIZE['b-pawn'].width}
+              height={CHESS_SVG_SIZE['b-pawn'].height}
+              loading="lazy"
+              class="h-12 w-auto shrink-0 opacity-90"
+              aria-hidden="true"
+            />
+            <img
+              src="/images/chess/w-queen.svg"
+              alt=""
+              width={CHESS_SVG_SIZE['w-queen'].width}
+              height={CHESS_SVG_SIZE['w-queen'].height}
+              loading="lazy"
+              class="h-20 w-auto shrink-0"
+              aria-hidden="true"
+            />
+          </div>
+        </div>
 
-    <!-- Panel formulario -->
-    <div class="bg-surface p-8 md:p-12">
-      <RegistrationForm client:load eventDate={eventDate} venue={venue} />
-    </div>
-  </div>
+        <div class="bg-surface p-8 md:p-12">
+          <RegistrationForm client:load eventDate={eventDate} venue={venue} />
+        </div>
+      </div>
+    )
+  }
 </BaseLayout>

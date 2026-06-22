@@ -36,3 +36,6 @@ scripts/
 
 # promo assets (local only)
 public/images/promo-story.png
+
+# tournament data backups (local only)
+backups/

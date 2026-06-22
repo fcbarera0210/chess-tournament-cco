@@ -1,9 +1,10 @@
 ---
 interface Props {
   tournamentName?: string;
+  finished?: boolean;
 }
 
-const { tournamentName = 'Chess Tournament Curicó' } = Astro.props;
+const { tournamentName = 'Chess Tournament Curicó', finished = false } = Astro.props;
 ---
 
 <footer class="relative z-10 section-dark mt-auto py-12">
@@ -14,11 +15,23 @@ const { tournamentName = 'Chess Tournament Curicó' } = Astro.props;
         <span class="font-display font-bold">{tournamentName}</span>
       </div>
       <nav class="flex flex-wrap justify-center gap-6 text-sm text-white/70">
-        <a href="/inscripcion" class="hover:text-white">Inscripción</a>
-        <a href="/clasificacion" class="hover:text-white">Clasificación</a>
-        <a href="/bases" class="hover:text-white">Bases</a>
-        <a href="/live" class="hover:text-white">Live</a>
-        <a href="/kiosk" class="hover:text-white">Kiosk</a>
+        {
+          finished ? (
+            <>
+              <a href="/torneo" class="hover:text-white">Resultados</a>
+              <a href="/clasificacion" class="hover:text-white">Clasificación</a>
+              <a href="/bases" class="hover:text-white">Bases</a>
+            </>
+          ) : (
+            <>
+              <a href="/inscripcion" class="hover:text-white">Inscripción</a>
+              <a href="/clasificacion" class="hover:text-white">Clasificación</a>
+              <a href="/bases" class="hover:text-white">Bases</a>
+              <a href="/live" class="hover:text-white">Live</a>
+              <a href="/kiosk" class="hover:text-white">Kiosk</a>
+            </>
+          )
+        }
       </nav>
     </div>
     <p class="mt-8 text-center text-xs text-white/40">

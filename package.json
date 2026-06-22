@@ -15,12 +15,18 @@
     "db:migrate:run": "tsx scripts/migrate.ts",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx scripts/seed.ts",
+    "db:backup": "tsx scripts/backup-tournament.ts",
     "test": "vitest run"
   },
   "dependencies": {
     "@astrojs/react": "^5.0.7",
     "@auth/core": "^0.34.3",
     "@neondatabase/serverless": "^1.1.0",
+    "@vercel/blob": "^2.3.0",
+    "browser-image-compression": "^2.0.2",
+    "fflate": "^0.8.2",
+    "heic-to": "^1.4.2",
+    "nanoid": "^5.1.6",
     "@tailwindcss/vite": "^4.3.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

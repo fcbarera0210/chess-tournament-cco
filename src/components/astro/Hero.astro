@@ -4,9 +4,17 @@ import { SpotsCounter } from '../react/SpotsCounter';
 
 interface Props {
   tournamentName?: string;
+  finished?: boolean;
+  eventDate?: string;
+  venue?: string;
 }
 
-const { tournamentName = 'Chess Tournament Curicó' } = Astro.props;
+const {
+  tournamentName = 'Chess Tournament Curicó',
+  finished = false,
+  eventDate = '',
+  venue = '',
+} = Astro.props;
 ---
 
 <section class="hero-texture relative overflow-hidden rounded-3xl px-6 py-20 md:px-12 md:py-28">
@@ -14,15 +22,41 @@ const { tournamentName = 'Chess Tournament Curicó' } = Astro.props;
     <h1 class="font-display text-4xl font-extrabold leading-tight tracking-tight md:text-6xl lg:text-7xl">
       {tournamentName}
     </h1>
-    <p class="mx-auto mt-6 max-w-xl text-lg text-muted md:text-xl">
-      Torneo casual de ajedrez. Inscripción gratuita, todos los niveles bienvenidos.
-    </p>
-    <div class="mt-8 flex justify-center">
-      <SpotsCounter client:load />
-    </div>
-    <div class="mt-8 flex flex-wrap justify-center gap-4">
-      <PillButton href="/inscripcion">Inscribirme</PillButton>
-      <PillButton href="/clasificacion" variant="outline">Clasificación</PillButton>
-    </div>
+    {
+      finished ? (
+        <>
+          <span class="mt-6 inline-flex rounded-full border border-finished/30 bg-finished/10 px-4 py-1.5 text-sm font-semibold text-finished">
+            Torneo finalizado
+          </span>
+          <p class="mx-auto mt-6 max-w-xl text-lg text-muted md:text-xl">
+            Gracias a todos los que participaron. Revisa la clasificación, las partidas y las fotos del
+            evento.
+          </p>
+          {eventDate && (
+            <p class="mx-auto mt-3 max-w-xl capitalize text-muted">
+              {eventDate}
+              {venue ? ` · ${venue}` : ''}
+            </p>
+          )}
+          <div class="mt-8 flex flex-wrap justify-center gap-4">
+            <PillButton href="/torneo">Ver resultados del torneo</PillButton>
+            <PillButton href="/clasificacion" variant="outline">Clasificación</PillButton>
+          </div>
+        </>
+      ) : (
+        <>
+          <p class="mx-auto mt-6 max-w-xl text-lg text-muted md:text-xl">
+            Torneo casual de ajedrez. Inscripción gratuita, todos los niveles bienvenidos.
+          </p>
+          <div class="mt-8 flex justify-center">
+            <SpotsCounter client:load />
+          </div>
+          <div class="mt-8 flex flex-wrap justify-center gap-4">
+            <PillButton href="/inscripcion">Inscribirme</PillButton>
+            <PillButton href="/clasificacion" variant="outline">Clasificación</PillButton>
+          </div>
+        </>
+      )
+    }
   </div>
 </section>

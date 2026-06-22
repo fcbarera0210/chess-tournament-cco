@@ -89,6 +89,17 @@ export const games = pgTable('games', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const tournamentPhotos = pgTable('tournament_photos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tournamentId: uuid('tournament_id')
+    .notNull()
+    .references(() => tournaments.id, { onDelete: 'cascade' }),
+  url: text('url').notNull(),
+  caption: text('caption'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const adminUsers = pgTable('admin_users', {
   id: uuid('id').primaryKey().defaultRandom(),
   username: text('username').notNull().unique(),
@@ -100,6 +111,14 @@ export const adminUsers = pgTable('admin_users', {
 export const tournamentsRelations = relations(tournaments, ({ many }) => ({
   players: many(players),
   rounds: many(rounds),
+  photos: many(tournamentPhotos),
+}));
+
+export const tournamentPhotosRelations = relations(tournamentPhotos, ({ one }) => ({
+  tournament: one(tournaments, {
+    fields: [tournamentPhotos.tournamentId],
+    references: [tournaments.id],
+  }),
 }));
 
 export const playersRelations = relations(players, ({ one, many }) => ({

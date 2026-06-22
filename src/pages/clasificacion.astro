@@ -1,14 +1,33 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { StandingsTable } from '../components/react/StandingsTable';
+import { getActiveTournament } from '../lib/tournament';
+
+export const prerender = false;
+
+const tournament = await getActiveTournament();
+const isFinished = tournament?.status === 'finished';
 ---
 
 <BaseLayout title="Clasificación — Chess Tournament Curicó" wide={true}>
   <section class="section-dark -mx-4 mb-10 rounded-3xl px-6 py-12 md:-mx-0">
     <h1 class="font-display text-center text-4xl font-bold md:text-5xl">Clasificación</h1>
     <p class="mx-auto mt-3 max-w-lg text-center text-white/60">
-      Tabla actualizada automáticamente durante el torneo.
-      <a href="/live" class="text-white underline hover:no-underline"> Ver en vivo</a>
+      {
+        isFinished ? (
+          <>
+            Torneo finalizado.{' '}
+            <a href="/torneo" class="text-white underline hover:no-underline">
+              Ver archivo completo
+            </a>
+          </>
+        ) : (
+          <>
+            Tabla actualizada automáticamente durante el torneo.
+            <a href="/live" class="text-white underline hover:no-underline"> Ver en vivo</a>
+          </>
+        )
+      }
     </p>
   </section>
   <StandingsTable client:load />

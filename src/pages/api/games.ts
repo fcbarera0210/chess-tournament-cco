@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { eq } from 'drizzle-orm';
 import { db } from '../../lib/db';
 import { games, rounds } from '../../lib/db/schema';
+import { getActiveTournament, isTournamentLocked } from '../../lib/tournament';
 import { withAdmin } from '../../lib/session';
 
 export const prerender = false;
@@ -20,6 +21,18 @@ const PLAYABLE_RESULTS = ['white', 'black', 'draw'] as const;
 
 export const PATCH: APIRoute = async ({ request }) =>
   withAdmin(request, async () => {
+    const tournament = await getActiveTournament();
+    if (!tournament) {
+      return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
+    }
+
+    if (isTournamentLocked(tournament)) {
+      return new Response(
+        JSON.stringify({ error: 'El torneo está finalizado y no admite cambios' }),
+        { status: 403 },
+      );
+    }
+
     const body = await request.json();
     const { gameId, result } = body;
 

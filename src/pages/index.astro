@@ -5,6 +5,7 @@ import SectionDark from '../components/astro/SectionDark.astro';
 import FeatureCard from '../components/astro/FeatureCard.astro';
 import InfoRow from '../components/astro/InfoRow.astro';
 import TournamentIllustration from '../components/astro/TournamentIllustration.astro';
+import PillButton from '../components/astro/PillButton.astro';
 import { getActiveTournament, getRegistrationStats } from '../lib/tournament';
 import { CHESS_SVG_SIZE } from '../lib/chess-svg-sizes';
 
@@ -12,6 +13,7 @@ export const prerender = false;
 
 const tournament = await getActiveTournament();
 const stats = tournament ? await getRegistrationStats(tournament.id) : null;
+const isFinished = tournament?.status === 'finished';
 
 const eventDate = tournament
   ? new Date(tournament.eventDate + 'T12:00:00').toLocaleDateString('es-CL', {
@@ -22,132 +24,186 @@ const eventDate = tournament
   : 'sábado 20 de junio';
 ---
 
-<BaseLayout>
-  <Hero tournamentName={tournament?.name ?? 'Chess Tournament Curicó'} />
+<BaseLayout finished={isFinished}>
+  <Hero
+    tournamentName={tournament?.name ?? 'Chess Tournament Curicó'}
+    finished={isFinished}
+    eventDate={eventDate}
+    venue={tournament?.venue}
+  />
 
-  <SectionDark class="mt-12 rounded-3xl">
-    <h2 class="font-display mx-auto mb-12 max-w-2xl text-center text-3xl font-bold md:text-4xl">
-      ¿Por qué participar?
-    </h2>
-    <div class="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2">
-      <FeatureCard
-        number="01"
-        title="Inscripción gratuita"
-        variant="light"
-        image="/images/chess/b-pawn.svg"
-        imageAlt=""
-        imageWidth={CHESS_SVG_SIZE['b-pawn'].width}
-        imageHeight={CHESS_SVG_SIZE['b-pawn'].height}
-      />
-      <FeatureCard
-        number="02"
-        title="Todos los niveles bienvenidos"
-        variant="dark"
-        image="/images/chess/w-knight-front.svg"
-        imageAlt=""
-        imageWidth={CHESS_SVG_SIZE['w-knight-front'].width}
-        imageHeight={CHESS_SVG_SIZE['w-knight-front'].height}
-      />
-      <FeatureCard
-        number="03"
-        title="Partidas en paralelo"
-        variant="light"
-        desktopVariant="dark"
-        image="/images/chess/b-queen.svg"
-        desktopImage="/images/chess/w-queen.svg"
-        imageAlt=""
-        imageWidth={CHESS_SVG_SIZE['b-queen'].width}
-        imageHeight={CHESS_SVG_SIZE['b-queen'].height}
-        desktopImageWidth={CHESS_SVG_SIZE['w-queen'].width}
-        desktopImageHeight={CHESS_SVG_SIZE['w-queen'].height}
-      />
-      <FeatureCard
-        number="04"
-        title="Clasificación en vivo"
-        variant="dark"
-        desktopVariant="light"
-        image="/images/chess/w-king.svg"
-        desktopImage="/images/chess/b-king.svg"
-        imageAlt=""
-        imageWidth={CHESS_SVG_SIZE['w-king'].width}
-        imageHeight={CHESS_SVG_SIZE['w-king'].height}
-        desktopImageWidth={CHESS_SVG_SIZE['b-king'].width}
-        desktopImageHeight={CHESS_SVG_SIZE['b-king'].height}
-      />
-    </div>
-  </SectionDark>
+  {
+    isFinished ? (
+      <>
+        <SectionDark class="mt-12 rounded-3xl">
+          <h2 class="font-display mx-auto mb-6 max-w-2xl text-center text-3xl font-bold md:text-4xl">
+            Próximos eventos
+          </h2>
+          <p class="mx-auto max-w-2xl text-center text-white/70">
+            Gracias al gran impacto del primer torneo, estamos preparando nuevas jornadas de ajedrez en
+            Curicó. Mantente atento para más información.
+          </p>
+        </SectionDark>
 
-  <section class="mt-16 grid items-center gap-12 lg:grid-cols-2">
-    <div class="space-y-8">
-      <h2 class="font-display text-3xl font-bold md:text-4xl">Detalles del torneo</h2>
-      <InfoRow
-        title="Cuándo"
-        piece="/images/chess/w-knight-front.svg"
-        pieceWidth={CHESS_SVG_SIZE['w-knight-front'].width}
-        pieceHeight={CHESS_SVG_SIZE['w-knight-front'].height}
-      >
-        <p class="capitalize">{eventDate}</p>
-        <p>
-          {tournament?.eventTimeStart ?? '15:00'} – {tournament?.eventTimeEnd ?? '20:00'}
-        </p>
-      </InfoRow>
-      <InfoRow
-        title="Dónde"
-        piece="/images/chess/b-rook.svg"
-        pieceWidth={CHESS_SVG_SIZE['b-rook'].width}
-        pieceHeight={CHESS_SVG_SIZE['b-rook'].height}
-      >
-        <p>{tournament?.venue ?? 'Curicó — lugar por confirmar'}</p>
-        {
-          tournament?.venueMapsUrl && (
-            <a
-              href={tournament.venueMapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="mt-1 inline-block font-semibold text-ink underline-offset-2 hover:underline"
+        <section class="mt-16">
+          <div class="card-light mx-auto max-w-3xl p-8 shadow-lg">
+            <h2 class="font-display text-2xl font-bold md:text-3xl">Primer torneo realizado</h2>
+            <p class="mt-3 text-muted">
+              Revisa quiénes participaron, la clasificación final, todas las partidas jugadas y la galería
+              de fotos del evento.
+            </p>
+            <dl class="mt-6 space-y-3 text-sm">
+              <div>
+                <dt class="text-muted">Fecha</dt>
+                <dd class="font-semibold capitalize">{eventDate}</dd>
+              </div>
+              <div>
+                <dt class="text-muted">Lugar</dt>
+                <dd class="font-semibold">{tournament?.venue}</dd>
+              </div>
+              {
+                stats && (
+                  <div>
+                    <dt class="text-muted">Participantes</dt>
+                    <dd class="font-semibold">{stats.registered} jugadores</dd>
+                  </div>
+                )
+              }
+            </dl>
+            <div class="mt-8">
+              <PillButton href="/torneo">Ver archivo completo del torneo</PillButton>
+            </div>
+          </div>
+        </section>
+      </>
+    ) : (
+      <>
+        <SectionDark class="mt-12 rounded-3xl">
+          <h2 class="font-display mx-auto mb-12 max-w-2xl text-center text-3xl font-bold md:text-4xl">
+            ¿Por qué participar?
+          </h2>
+          <div class="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2">
+            <FeatureCard
+              number="01"
+              title="Inscripción gratuita"
+              variant="light"
+              image="/images/chess/b-pawn.svg"
+              imageAlt=""
+              imageWidth={CHESS_SVG_SIZE['b-pawn'].width}
+              imageHeight={CHESS_SVG_SIZE['b-pawn'].height}
+            />
+            <FeatureCard
+              number="02"
+              title="Todos los niveles bienvenidos"
+              variant="dark"
+              image="/images/chess/w-knight-front.svg"
+              imageAlt=""
+              imageWidth={CHESS_SVG_SIZE['w-knight-front'].width}
+              imageHeight={CHESS_SVG_SIZE['w-knight-front'].height}
+            />
+            <FeatureCard
+              number="03"
+              title="Partidas en paralelo"
+              variant="light"
+              desktopVariant="dark"
+              image="/images/chess/b-queen.svg"
+              desktopImage="/images/chess/w-queen.svg"
+              imageAlt=""
+              imageWidth={CHESS_SVG_SIZE['b-queen'].width}
+              imageHeight={CHESS_SVG_SIZE['b-queen'].height}
+              desktopImageWidth={CHESS_SVG_SIZE['w-queen'].width}
+              desktopImageHeight={CHESS_SVG_SIZE['w-queen'].height}
+            />
+            <FeatureCard
+              number="04"
+              title="Clasificación en vivo"
+              variant="dark"
+              desktopVariant="light"
+              image="/images/chess/w-king.svg"
+              desktopImage="/images/chess/b-king.svg"
+              imageAlt=""
+              imageWidth={CHESS_SVG_SIZE['w-king'].width}
+              imageHeight={CHESS_SVG_SIZE['w-king'].height}
+              desktopImageWidth={CHESS_SVG_SIZE['b-king'].width}
+              desktopImageHeight={CHESS_SVG_SIZE['b-king'].height}
+            />
+          </div>
+        </SectionDark>
+
+        <section class="mt-16 grid items-center gap-12 lg:grid-cols-2">
+          <div class="space-y-8">
+            <h2 class="font-display text-3xl font-bold md:text-4xl">Detalles del torneo</h2>
+            <InfoRow
+              title="Cuándo"
+              piece="/images/chess/w-knight-front.svg"
+              pieceWidth={CHESS_SVG_SIZE['w-knight-front'].width}
+              pieceHeight={CHESS_SVG_SIZE['w-knight-front'].height}
             >
-              Ir a ubicación
-            </a>
-          )
-        }
-      </InfoRow>
-      <InfoRow
-        title="Formato"
-        piece="/images/chess/w-bishop.svg"
-        pieceWidth={CHESS_SVG_SIZE['w-bishop'].width}
-        pieceHeight={CHESS_SVG_SIZE['w-bishop'].height}
-      >
-        <p>Varias rondas · control {tournament?.timeControl ?? '10+5'}</p>
-        {
-          stats && (
-            <a
-              href="/clasificacion"
-              class="mt-1 inline-block font-semibold text-ink underline-offset-2 hover:underline"
+              <p class="capitalize">{eventDate}</p>
+              <p>
+                {tournament?.eventTimeStart ?? '15:00'} – {tournament?.eventTimeEnd ?? '20:00'}
+              </p>
+            </InfoRow>
+            <InfoRow
+              title="Dónde"
+              piece="/images/chess/b-rook.svg"
+              pieceWidth={CHESS_SVG_SIZE['b-rook'].width}
+              pieceHeight={CHESS_SVG_SIZE['b-rook'].height}
             >
-              {stats.registered} jugadores inscritos
-            </a>
-          )
-        }
-      </InfoRow>
-    </div>
-    <TournamentIllustration />
-  </section>
+              <p>{tournament?.venue ?? 'Curicó — lugar por confirmar'}</p>
+              {
+                tournament?.venueMapsUrl && (
+                  <a
+                    href={tournament.venueMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="mt-1 inline-block font-semibold text-ink underline-offset-2 hover:underline"
+                  >
+                    Ir a ubicación
+                  </a>
+                )
+              }
+            </InfoRow>
+            <InfoRow
+              title="Formato"
+              piece="/images/chess/w-bishop.svg"
+              pieceWidth={CHESS_SVG_SIZE['w-bishop'].width}
+              pieceHeight={CHESS_SVG_SIZE['w-bishop'].height}
+            >
+              <p>Varias rondas · control {tournament?.timeControl ?? '10+5'}</p>
+              {
+                stats && (
+                  <a
+                    href="/clasificacion"
+                    class="mt-1 inline-block font-semibold text-ink underline-offset-2 hover:underline"
+                  >
+                    {stats.registered} jugadores inscritos
+                  </a>
+                )
+              }
+            </InfoRow>
+          </div>
+          <TournamentIllustration />
+        </section>
 
-  <section class="mt-16">
-    <h2 class="font-display mb-8 text-center text-3xl font-bold">¿Cómo será el día?</h2>
-    <ol class="grid gap-4 md:grid-cols-3">
-      <li class="card-light p-6 shadow-sm">
-        <p class="font-display text-lg font-bold">Llegas y te registramos</p>
-        <p class="mt-2 text-sm text-muted">Check-in al llegar al local</p>
-      </li>
-      <li class="card-light p-6 shadow-sm">
-        <p class="font-display text-lg font-bold">Juegas varias rondas</p>
-        <p class="mt-2 text-sm text-muted">Partidas en paralelo, todos compiten</p>
-      </li>
-      <li class="card-light p-6 shadow-sm">
-        <p class="font-display text-lg font-bold">Tabla final</p>
-        <p class="mt-2 text-sm text-muted">Clasificación visible en vivo</p>
-      </li>
-    </ol>
-  </section>
+        <section class="mt-16">
+          <h2 class="font-display mb-8 text-center text-3xl font-bold">¿Cómo será el día?</h2>
+          <ol class="grid gap-4 md:grid-cols-3">
+            <li class="card-light p-6 shadow-sm">
+              <p class="font-display text-lg font-bold">Llegas y te registramos</p>
+              <p class="mt-2 text-sm text-muted">Check-in al llegar al local</p>
+            </li>
+            <li class="card-light p-6 shadow-sm">
+              <p class="font-display text-lg font-bold">Juegas varias rondas</p>
+              <p class="mt-2 text-sm text-muted">Partidas en paralelo, todos compiten</p>
+            </li>
+            <li class="card-light p-6 shadow-sm">
+              <p class="font-display text-lg font-bold">Tabla final</p>
+              <p class="mt-2 text-sm text-muted">Clasificación visible en vivo</p>
+            </li>
+          </ol>
+        </section>
+      </>
+    )
+  }
 </BaseLayout>

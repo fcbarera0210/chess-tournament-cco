@@ -1,12 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 
-const links = [
+const activeLinks = [
   { href: '/clasificacion', label: 'Clasificación' },
   { href: '/live', label: 'Live' },
   { href: '/inscripcion', label: 'Inscribirme', primary: true },
 ];
 
-export function MobileNav() {
+const finishedLinks = [
+  { href: '/torneo', label: 'Resultados', primary: true },
+  { href: '/clasificacion', label: 'Clasificación' },
+];
+
+type MobileNavProps = {
+  finished?: boolean;
+};
+
+export function MobileNav({ finished = false }: MobileNavProps) {
+  const links = finished ? finishedLinks : activeLinks;
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 

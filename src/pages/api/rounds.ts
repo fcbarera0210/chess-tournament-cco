@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../../lib/db';
 import { rounds, games, players, tournaments } from '../../lib/db/schema';
-import { getActiveTournament, getGamesForRound } from '../../lib/tournament';
+import { getActiveTournament, getGamesForRound, isTournamentLocked } from '../../lib/tournament';
 import { withAdmin } from '../../lib/session';
 import { buildPairingContext, getCheckedInPlayerIds } from '../../lib/pairing-context';
 import { validatePairings } from '../../lib/pairing-validation';
@@ -37,6 +37,13 @@ export const POST: APIRoute = async ({ request }) =>
 
     const body = await request.json();
     const { action, roundNumber, pairings, roundId } = body;
+
+    if (isTournamentLocked(tournament)) {
+      return new Response(
+        JSON.stringify({ error: 'El torneo está finalizado y no admite cambios' }),
+        { status: 403 },
+      );
+    }
 
     if (action === 'start_tournament') {
       const checkedIn = await db

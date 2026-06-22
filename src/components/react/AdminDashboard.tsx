@@ -63,8 +63,14 @@ export function AdminDashboard() {
         {[
           { href: '/admin/jugadores', label: 'Gestionar jugadores' },
           { href: '/admin/rondas', label: 'Ver rondas' },
-          { href: '/live', label: 'Monitoreo live' },
-          { href: '/kiosk', label: 'Vista kiosk' },
+          { href: '/admin/galeria', label: 'Galería de fotos' },
+          { href: '/admin/torneo', label: 'Configuración y export' },
+          ...(data.tournament.status === 'finished'
+            ? [{ href: '/torneo', label: 'Archivo público' }]
+            : [
+                { href: '/live', label: 'Monitoreo live' },
+                { href: '/kiosk', label: 'Vista kiosk' },
+              ]),
         ].map((link) => (
           <a
             key={link.href}

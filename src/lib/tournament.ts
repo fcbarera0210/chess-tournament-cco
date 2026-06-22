@@ -3,7 +3,11 @@ import { db } from './db';
 import { tournaments, players, rounds, games } from './db/schema';
 
 export function getTournamentSlug(): string {
-  return import.meta.env.PUBLIC_TOURNAMENT_SLUG ?? process.env.PUBLIC_TOURNAMENT_SLUG ?? 'curico-2026';
+  const fromMeta =
+    typeof import.meta !== 'undefined' && import.meta.env
+      ? import.meta.env.PUBLIC_TOURNAMENT_SLUG
+      : undefined;
+  return fromMeta ?? process.env.PUBLIC_TOURNAMENT_SLUG ?? 'curico-2026';
 }
 
 export async function getActiveTournament() {
@@ -73,6 +77,10 @@ export async function getGamesForRound(roundId: string) {
     whiteName: g.whitePlayer?.name ?? null,
     blackName: g.blackPlayer?.name ?? null,
   }));
+}
+
+export function isTournamentLocked(tournament: { status: string }) {
+  return tournament.status === 'finished';
 }
 
 export function canEditFormat(tournament: { status: string }) {

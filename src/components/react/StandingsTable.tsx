@@ -48,9 +48,10 @@ export function StandingsTable() {
   const standings = data.standings ?? [];
   const players = data.players ?? [];
   const isLive = data.tournament.status === 'live';
+  const isFinished = data.tournament.status === 'finished';
   const hasStandings = standings.some((s) => s.points > 0 || s.gamesPlayed > 0);
 
-  if (!isLive && !hasStandings) {
+  if (!isLive && !hasStandings && !isFinished) {
     const registered = players.filter((p) => ['registered', 'checked_in'].includes(p.status));
     return (
       <div className="section-dark rounded-3xl p-8">

@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getActiveTournament, resetTournamentData } from '../../../lib/tournament';
+import { getActiveTournament, resetTournamentData, isTournamentLocked } from '../../../lib/tournament';
 import { withAdmin } from '../../../lib/session';
 
 export const prerender = false;
@@ -9,6 +9,13 @@ export const POST: APIRoute = async ({ request }) =>
     const tournament = await getActiveTournament();
     if (!tournament) {
       return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
+    }
+
+    if (isTournamentLocked(tournament)) {
+      return new Response(
+        JSON.stringify({ error: 'No se puede reiniciar un torneo finalizado' }),
+        { status: 403 },
+      );
     }
 
     const body = await request.json();

@@ -5,6 +5,7 @@ const links = [
   { href: '/admin/jugadores', label: 'Jugadores' },
   { href: '/admin/torneo', label: 'Torneo' },
   { href: '/admin/rondas', label: 'Rondas' },
+  { href: '/admin/galeria', label: 'Galería' },
   { href: '/admin/usuarios', label: 'Admins' },
   { href: '/live', label: 'Live' },
   { href: '/', label: 'Sitio público', muted: true },
