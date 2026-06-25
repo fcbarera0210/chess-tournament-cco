@@ -1,9 +1,14 @@
 ---
+import ChessPiece from './ChessPiece.astro';
+import type { ChessSvgName } from '../../lib/chess-svg-sizes';
+
 interface Props {
   number: string;
   title: string;
   variant?: 'light' | 'dark';
   desktopVariant?: 'light' | 'dark';
+  piece?: ChessSvgName;
+  desktopPiece?: ChessSvgName;
   image?: string;
   desktopImage?: string;
   imageAlt?: string;
@@ -18,6 +23,8 @@ const {
   title,
   variant = 'light',
   desktopVariant,
+  piece,
+  desktopPiece,
   image,
   desktopImage,
   imageAlt = '',
@@ -37,6 +44,9 @@ const surfaceClasses = responsiveSurface
   : mobileDark
     ? 'card-dark'
     : 'card-light';
+
+const pieceClass =
+  'pointer-events-none absolute top-0 right-0 bottom-0 h-full w-auto max-w-[45%] object-contain object-right opacity-90';
 ---
 
 <div
@@ -47,32 +57,40 @@ const surfaceClasses = responsiveSurface
 >
   <div class="relative flex min-h-0 flex-1 flex-col justify-between">
     {
-      image && (
-        <img
-          src={image}
-          alt={imageAlt}
-          width={imageWidth ?? 22}
-          height={imageHeight ?? 62}
-          loading="lazy"
-          decoding="async"
-          class:list={[
-            'pointer-events-none absolute top-0 right-0 bottom-0 h-full w-auto max-w-[45%] object-contain object-right opacity-90',
-            desktopImage && 'sm:hidden',
-          ]}
+      piece ? (
+        <ChessPiece
+          name={piece}
+          class:list={[pieceClass, desktopPiece && 'sm:hidden']}
         />
+      ) : (
+        image && (
+          <img
+            src={image}
+            alt={imageAlt}
+            width={imageWidth ?? 22}
+            height={imageHeight ?? 62}
+            loading="lazy"
+            decoding="async"
+            class:list={[pieceClass, desktopImage && 'sm:hidden']}
+          />
+        )
       )
     }
     {
-      desktopImage && (
-        <img
-          src={desktopImage}
-          alt={imageAlt}
-          width={desktopImageWidth ?? imageWidth ?? 22}
-          height={desktopImageHeight ?? imageHeight ?? 62}
-          loading="lazy"
-          decoding="async"
-          class="pointer-events-none absolute top-0 right-0 bottom-0 hidden h-full w-auto max-w-[45%] object-contain object-right opacity-90 sm:block"
-        />
+      desktopPiece ? (
+        <ChessPiece name={desktopPiece} class:list={[pieceClass, 'hidden sm:block']} />
+      ) : (
+        desktopImage && (
+          <img
+            src={desktopImage}
+            alt={imageAlt}
+            width={desktopImageWidth ?? imageWidth ?? 22}
+            height={desktopImageHeight ?? imageHeight ?? 62}
+            loading="lazy"
+            decoding="async"
+            class="pointer-events-none absolute top-0 right-0 bottom-0 hidden h-full w-auto max-w-[45%] object-contain object-right opacity-90 sm:block"
+          />
+        )
       )
     }
     <span class="relative z-10 num-badge w-fit">{number}</span>

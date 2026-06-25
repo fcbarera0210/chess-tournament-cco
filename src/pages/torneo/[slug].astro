@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { TournamentArchive } from '../../components/react/TournamentArchive';
 import { getTournamentBySlug } from '../../lib/tournament';
+import { applyPublicPageCache } from '../../lib/public-cache';
 
 export const prerender = false;
 
@@ -9,6 +10,8 @@ const { slug } = Astro.params;
 if (!slug) {
   return new Response(null, { status: 404 });
 }
+
+applyPublicPageCache(Astro, 'archive', slug);
 
 const tournament = await getTournamentBySlug(slug);
 if (!tournament) {
@@ -23,5 +26,5 @@ if (!tournament) {
   tournamentName={tournament.name}
   finished={true}
 >
-  <TournamentArchive client:load slug={slug} />
+  <TournamentArchive client:visible slug={slug} />
 </BaseLayout>

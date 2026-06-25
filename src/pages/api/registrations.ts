@@ -4,10 +4,12 @@ import { db } from '../../lib/db';
 import { players } from '../../lib/db/schema';
 import { getTournamentBySlug, getRegistrationStats, isRegistrationOpen } from '../../lib/tournament';
 import { checkRateLimit } from '../../lib/rate-limit';
+import { invalidatePublicTournamentCache } from '../../lib/cache-invalidation';
+import { publicApiCacheHeaders } from '../../lib/public-cache';
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request, clientAddress, url }) => {
+export const POST: APIRoute = async ({ request, clientAddress, url, cache }) => {
   const ip = clientAddress ?? 'unknown';
   if (!checkRateLimit(ip)) {
     return new Response(JSON.stringify({ error: 'Demasiados intentos. Espera un momento.' }), {
@@ -98,6 +100,8 @@ export const POST: APIRoute = async ({ request, clientAddress, url }) => {
     })
     .returning();
 
+  await invalidatePublicTournamentCache(cache, slug);
+
   return new Response(
     JSON.stringify({
       success: true,
@@ -140,6 +144,11 @@ export const GET: APIRoute = async ({ url }) => {
         tournament.status === 'registration_open' &&
         stats.registered >= tournament.maxPlayers,
     }),
-    { headers: { 'Content-Type': 'application/json' } },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        ...publicApiCacheHeaders('registration'),
+      },
+    },
   );
 };

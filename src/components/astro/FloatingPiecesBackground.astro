@@ -1,5 +1,6 @@
 ---
 import { CHESS_SVG_SIZE, chessSvgSrc, type ChessSvgName } from '../../lib/chess-svg-sizes';
+import ChessPiece from './ChessPiece.astro';
 
 type Piece = {
   name: ChessSvgName;
@@ -93,24 +94,17 @@ const pieces: Piece[] = [
 
 <div class="site-floating-pieces pointer-events-none" aria-hidden="true">
   {
-    pieces.map((piece, i) => {
-      const size = CHESS_SVG_SIZE[piece.name];
-      return (
-        <div class={piece.wrapperClass} data-parallax-speed={piece.speed}>
-          <div class={piece.innerClass ?? undefined}>
-            <img
-              src={chessSvgSrc(piece.name)}
-              alt=""
-              width={size.width}
-              height={size.height}
-              loading={i < 3 ? 'eager' : 'lazy'}
-              decoding="async"
-              class={piece.imgClass}
-            />
-          </div>
+    pieces.map((piece, i) => (
+      <div class={piece.wrapperClass} data-parallax-speed={piece.speed}>
+        <div class={piece.innerClass ?? undefined}>
+          <ChessPiece
+            name={piece.name}
+            loading={i < 3 ? 'eager' : 'lazy'}
+            class={piece.imgClass}
+          />
         </div>
-      );
-    })
+      </div>
+    ))
   }
 </div>
 

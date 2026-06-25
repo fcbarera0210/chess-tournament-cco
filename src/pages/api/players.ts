@@ -5,6 +5,7 @@ import { players } from '../../lib/db/schema';
 import { withAdmin } from '../../lib/session';
 import { requireAdminTournament } from '../../lib/admin-tournament-context';
 import { isTournamentLocked } from '../../lib/tournament';
+import { invalidatePublicTournamentCache } from '../../lib/cache-invalidation';
 
 export const prerender = false;
 
@@ -25,7 +26,7 @@ export const GET: APIRoute = async ({ request }) =>
     });
   });
 
-export const POST: APIRoute = async ({ request }) =>
+export const POST: APIRoute = async ({ request, cache }) =>
   withAdmin(request, async () => {
     const tournament = await requireAdminTournament(request);
     if (!tournament) {
@@ -71,13 +72,15 @@ export const POST: APIRoute = async ({ request }) =>
       })
       .returning();
 
+    await invalidatePublicTournamentCache(cache, tournament.slug);
+
     return new Response(JSON.stringify({ player }), {
       status: 201,
       headers: { 'Content-Type': 'application/json' },
     });
   });
 
-export const PATCH: APIRoute = async ({ request }) =>
+export const PATCH: APIRoute = async ({ request, cache }) =>
   withAdmin(request, async () => {
     const tournament = await requireAdminTournament(request);
     if (!tournament) {
@@ -115,6 +118,8 @@ export const PATCH: APIRoute = async ({ request }) =>
         return new Response(JSON.stringify({ error: 'Jugador no encontrado' }), { status: 404 });
       }
 
+      await invalidatePublicTournamentCache(cache, tournament.slug);
+
       return new Response(JSON.stringify({ player: updated }), {
         headers: { 'Content-Type': 'application/json' },
       });
@@ -134,6 +139,8 @@ export const PATCH: APIRoute = async ({ request }) =>
     if (!updated) {
       return new Response(JSON.stringify({ error: 'Jugador no encontrado' }), { status: 404 });
     }
+
+    await invalidatePublicTournamentCache(cache, tournament.slug);
 
     return new Response(JSON.stringify({ player: updated }), {
       headers: { 'Content-Type': 'application/json' },

@@ -6,42 +6,24 @@ import FeatureCard from '../components/astro/FeatureCard.astro';
 import InfoRow from '../components/astro/InfoRow.astro';
 import TournamentIllustration from '../components/astro/TournamentIllustration.astro';
 import PillButton from '../components/astro/PillButton.astro';
-import {
-  getFeaturedTournament,
-  getPublicArchiveTournaments,
-  getPrimaryHomeArchive,
-  getRegistrationStats,
-} from '../lib/tournament';
-import { CHESS_SVG_SIZE } from '../lib/chess-svg-sizes';
+import { loadHomePageData } from '../lib/home-page';
+import { applyPublicPageCache } from '../lib/public-cache';
 
 export const prerender = false;
 
-const featured = await getFeaturedTournament();
-const primaryArchive = featured ? null : await getPrimaryHomeArchive();
-let archives = await getPublicArchiveTournaments();
-if (featured && archives.length === 0) {
-  const fallback = await getPrimaryHomeArchive();
-  if (fallback && fallback.id !== featured.id) {
-    archives = [fallback];
-  }
-}
-const otherArchives = primaryArchive
-  ? archives.filter((a) => a.id !== primaryArchive.id)
-  : archives;
+applyPublicPageCache(Astro, 'home', undefined);
 
-const navTournament = featured ?? primaryArchive;
-const featuredStats = featured ? await getRegistrationStats(featured.id) : null;
-const archiveStatsEntries =
-  featured && archives.length > 0
-    ? await Promise.all(
-        archives.map(async (tournament) => ({
-          tournament,
-          stats: await getRegistrationStats(tournament.id),
-        })),
-      )
-    : [];
-const primaryArchiveStats = primaryArchive ? await getRegistrationStats(primaryArchive.id) : null;
-const isArchiveHome = !featured && !!primaryArchive;
+const {
+  featured,
+  primaryArchive,
+  otherArchives,
+  navTournament,
+  featuredStats,
+  featuredSpotsInfo,
+  archiveStatsEntries,
+  primaryArchiveStats,
+  isArchiveHome,
+} = await loadHomePageData();
 
 function formatEventDate(dateStr: string) {
   return new Date(dateStr + 'T12:00:00').toLocaleDateString('es-CL', {
@@ -79,6 +61,7 @@ const eventDate = navTournament ? formatEventDate(navTournament.eventDate) : '';
           showRegistration={featured.publicRegistration}
           eventDate={eventDate}
           venue={featured.venue}
+          spotsInfo={featuredSpotsInfo}
         />
 
         <SectionDark class="mt-12 rounded-3xl">
@@ -90,45 +73,29 @@ const eventDate = navTournament ? formatEventDate(navTournament.eventDate) : '';
               number="01"
               title="Inscripción gratuita"
               variant="light"
-              image="/images/chess/b-pawn.svg"
-              imageAlt=""
-              imageWidth={CHESS_SVG_SIZE['b-pawn'].width}
-              imageHeight={CHESS_SVG_SIZE['b-pawn'].height}
+              piece="b-pawn"
             />
             <FeatureCard
               number="02"
               title="Todos los niveles bienvenidos"
               variant="dark"
-              image="/images/chess/w-knight-front.svg"
-              imageAlt=""
-              imageWidth={CHESS_SVG_SIZE['w-knight-front'].width}
-              imageHeight={CHESS_SVG_SIZE['w-knight-front'].height}
+              piece="w-knight-front"
             />
             <FeatureCard
               number="03"
               title="Partidas en paralelo"
               variant="light"
               desktopVariant="dark"
-              image="/images/chess/b-queen.svg"
-              desktopImage="/images/chess/w-queen.svg"
-              imageAlt=""
-              imageWidth={CHESS_SVG_SIZE['b-queen'].width}
-              imageHeight={CHESS_SVG_SIZE['b-queen'].height}
-              desktopImageWidth={CHESS_SVG_SIZE['w-queen'].width}
-              desktopImageHeight={CHESS_SVG_SIZE['w-queen'].height}
+              piece="b-queen"
+              desktopPiece="w-queen"
             />
             <FeatureCard
               number="04"
               title="Clasificación en vivo"
               variant="dark"
               desktopVariant="light"
-              image="/images/chess/w-king.svg"
-              desktopImage="/images/chess/b-king.svg"
-              imageAlt=""
-              imageWidth={CHESS_SVG_SIZE['w-king'].width}
-              imageHeight={CHESS_SVG_SIZE['w-king'].height}
-              desktopImageWidth={CHESS_SVG_SIZE['b-king'].width}
-              desktopImageHeight={CHESS_SVG_SIZE['b-king'].height}
+              piece="w-king"
+              desktopPiece="b-king"
             />
           </div>
         </SectionDark>
@@ -136,23 +103,13 @@ const eventDate = navTournament ? formatEventDate(navTournament.eventDate) : '';
         <section class="mt-16 grid items-center gap-12 lg:grid-cols-2">
           <div class="space-y-8">
             <h2 class="font-display text-3xl font-bold md:text-4xl">Detalles del torneo</h2>
-            <InfoRow
-              title="Cuándo"
-              piece="/images/chess/w-knight-front.svg"
-              pieceWidth={CHESS_SVG_SIZE['w-knight-front'].width}
-              pieceHeight={CHESS_SVG_SIZE['w-knight-front'].height}
-            >
+            <InfoRow title="Cuándo" piece="w-knight-front">
               <p class="capitalize">{eventDate}</p>
               <p>
                 {featured.eventTimeStart} – {featured.eventTimeEnd}
               </p>
             </InfoRow>
-            <InfoRow
-              title="Dónde"
-              piece="/images/chess/b-rook.svg"
-              pieceWidth={CHESS_SVG_SIZE['b-rook'].width}
-              pieceHeight={CHESS_SVG_SIZE['b-rook'].height}
-            >
+            <InfoRow title="Dónde" piece="b-rook">
               <p>{featured.venue}</p>
               {
                 featured.venueMapsUrl && (
@@ -167,12 +124,7 @@ const eventDate = navTournament ? formatEventDate(navTournament.eventDate) : '';
                 )
               }
             </InfoRow>
-            <InfoRow
-              title="Formato"
-              piece="/images/chess/w-bishop.svg"
-              pieceWidth={CHESS_SVG_SIZE['w-bishop'].width}
-              pieceHeight={CHESS_SVG_SIZE['w-bishop'].height}
-            >
+            <InfoRow title="Formato" piece="w-bishop">
               <p>Varias rondas · control {featured.timeControl}</p>
               {
                 featuredStats && (

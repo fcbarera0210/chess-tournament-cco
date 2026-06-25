@@ -7,6 +7,7 @@ import { withAdmin } from '../../lib/session';
 import { resolveAdminTournamentId } from '../../lib/admin-tournament-context';
 import { getTournamentById } from '../../lib/tournament';
 import { buildTournamentUpdates, assertFeaturedRegistrationUnique } from '../../lib/tournament-update';
+import { invalidatePublicTournamentCache } from '../../lib/cache-invalidation';
 
 export const prerender = false;
 
@@ -27,7 +28,7 @@ export const GET: APIRoute = async ({ request }) => {
   });
 };
 
-export const PATCH: APIRoute = async ({ request }) =>
+export const PATCH: APIRoute = async ({ request, cache }) =>
   withAdmin(request, async () => {
     const tournament = await loadAdminTournament(request);
     if (!tournament) {
@@ -51,6 +52,8 @@ export const PATCH: APIRoute = async ({ request }) =>
       .set(updates)
       .where(eq(tournaments.id, tournament.id))
       .returning();
+
+    await invalidatePublicTournamentCache(cache, updated.slug);
 
     return new Response(JSON.stringify({ tournament: updated }), {
       headers: { 'Content-Type': 'application/json' },

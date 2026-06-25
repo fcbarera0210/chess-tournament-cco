@@ -1,26 +1,39 @@
 ---
+import ChessPiece from './ChessPiece.astro';
+import type { ChessSvgName } from '../../lib/chess-svg-sizes';
+
 interface Props {
   title: string;
-  piece: string;
+  piece: ChessSvgName | string;
   pieceWidth?: number;
   pieceHeight?: number;
 }
 
 const { title, piece, pieceWidth = 22, pieceHeight = 62 } = Astro.props;
+const isNamedPiece = typeof piece === 'string' && !piece.includes('/');
 ---
 
 <div class="flex gap-4">
   <div class="flex h-11 w-8 shrink-0 items-center justify-center">
-    <img
-      src={piece}
-      alt=""
-      width={pieceWidth}
-      height={pieceHeight}
-      loading="lazy"
-      decoding="async"
-      class="h-full w-auto max-w-full object-contain object-bottom"
-      aria-hidden="true"
-    />
+    {
+      isNamedPiece ? (
+        <ChessPiece
+          name={piece as ChessSvgName}
+          class="h-full w-auto max-w-full object-contain object-bottom"
+        />
+      ) : (
+        <img
+          src={piece}
+          alt=""
+          width={pieceWidth}
+          height={pieceHeight}
+          loading="lazy"
+          decoding="async"
+          class="h-full w-auto max-w-full object-contain object-bottom"
+          aria-hidden="true"
+        />
+      )
+    }
   </div>
   <div>
     <h3 class="font-display text-lg font-bold">{title}</h3>

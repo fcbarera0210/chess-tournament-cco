@@ -3,7 +3,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PillButton from '../../components/astro/PillButton.astro';
 import { getTournamentBySlug, getRegistrationStats } from '../../lib/tournament';
 import { RegistrationForm } from '../../components/react/RegistrationForm';
-import { CHESS_SVG_SIZE } from '../../lib/chess-svg-sizes';
+import ChessPiece from '../../components/astro/ChessPiece.astro';
+import { applyPublicPageCache } from '../../lib/public-cache';
 
 export const prerender = false;
 
@@ -11,6 +12,8 @@ const { slug } = Astro.params;
 if (!slug) {
   return new Response(null, { status: 404 });
 }
+
+applyPublicPageCache(Astro, 'registration', slug);
 
 const tournament = await getTournamentBySlug(slug);
 if (!tournament || !tournament.publicRegistration) {
@@ -89,33 +92,9 @@ const venue = tournament.venue;
           </div>
 
           <div class="mt-12 flex items-end justify-center gap-6 px-2 sm:gap-10">
-            <img
-              src="/images/chess/w-king.svg"
-              alt=""
-              width={CHESS_SVG_SIZE['w-king'].width}
-              height={CHESS_SVG_SIZE['w-king'].height}
-              loading="lazy"
-              class="h-16 w-auto shrink-0"
-              aria-hidden="true"
-            />
-            <img
-              src="/images/chess/b-pawn.svg"
-              alt=""
-              width={CHESS_SVG_SIZE['b-pawn'].width}
-              height={CHESS_SVG_SIZE['b-pawn'].height}
-              loading="lazy"
-              class="h-12 w-auto shrink-0 opacity-90"
-              aria-hidden="true"
-            />
-            <img
-              src="/images/chess/w-queen.svg"
-              alt=""
-              width={CHESS_SVG_SIZE['w-queen'].width}
-              height={CHESS_SVG_SIZE['w-queen'].height}
-              loading="lazy"
-              class="h-20 w-auto shrink-0"
-              aria-hidden="true"
-            />
+            <ChessPiece name="w-king" class="h-16 w-auto shrink-0" />
+            <ChessPiece name="b-pawn" class="h-12 w-auto shrink-0 opacity-90" />
+            <ChessPiece name="w-queen" class="h-20 w-auto shrink-0" />
           </div>
         </div>
 

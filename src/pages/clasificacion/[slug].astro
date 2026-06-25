@@ -46,5 +46,5 @@ const isFinished = tournament.status === 'finished';
       }
     </p>
   </section>
-  <StandingsTable client:load slug={slug} />
+  <StandingsTable client:visible slug={slug} />
 </BaseLayout>

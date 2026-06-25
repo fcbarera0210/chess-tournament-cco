@@ -2,8 +2,11 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getFeaturedTournament, getRegistrationStats } from '../lib/tournament';
 import { eventLegal } from '../lib/event-legal';
+import { applyPublicPageCache } from '../lib/public-cache';
 
 export const prerender = false;
+
+applyPublicPageCache(Astro, 'bases');
 
 const tournament = await getFeaturedTournament();
 const stats = tournament ? await getRegistrationStats(tournament.id) : null;

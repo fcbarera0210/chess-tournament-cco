@@ -83,32 +83,70 @@ export async function slugExists(slug: string, excludeId?: string) {
   return !!row;
 }
 
-export async function getRegistrationStats(tournamentId: string) {
-  const registered = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(players)
-    .where(
-      and(
-        eq(players.tournamentId, tournamentId),
-        inArray(players.status, ['registered', 'checked_in']),
-      ),
-    );
+export type RegistrationStats = {
+  registered: number;
+  waitlist: number;
+  checkedIn: number;
+};
 
-  const waitlist = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(players)
-    .where(and(eq(players.tournamentId, tournamentId), eq(players.status, 'waitlist')));
+const EMPTY_REGISTRATION_STATS: RegistrationStats = {
+  registered: 0,
+  waitlist: 0,
+  checkedIn: 0,
+};
 
-  const checkedIn = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(players)
-    .where(and(eq(players.tournamentId, tournamentId), eq(players.status, 'checked_in')));
-
+function mapRegistrationStatsRow(row: {
+  registered: number | null;
+  waitlist: number | null;
+  checkedIn: number | null;
+}): RegistrationStats {
   return {
-    registered: registered[0]?.count ?? 0,
-    waitlist: waitlist[0]?.count ?? 0,
-    checkedIn: checkedIn[0]?.count ?? 0,
+    registered: row.registered ?? 0,
+    waitlist: row.waitlist ?? 0,
+    checkedIn: row.checkedIn ?? 0,
   };
+}
+
+export async function getRegistrationStats(tournamentId: string): Promise<RegistrationStats> {
+  const [row] = await db
+    .select({
+      registered: sql<number>`count(*) filter (where ${players.status} in ('registered', 'checked_in'))::int`,
+      waitlist: sql<number>`count(*) filter (where ${players.status} = 'waitlist')::int`,
+      checkedIn: sql<number>`count(*) filter (where ${players.status} = 'checked_in')::int`,
+    })
+    .from(players)
+    .where(eq(players.tournamentId, tournamentId));
+
+  return row ? mapRegistrationStatsRow(row) : EMPTY_REGISTRATION_STATS;
+}
+
+export async function getRegistrationStatsBatch(
+  tournamentIds: string[],
+): Promise<Map<string, RegistrationStats>> {
+  const uniqueIds = [...new Set(tournamentIds)];
+  const result = new Map<string, RegistrationStats>();
+
+  if (uniqueIds.length === 0) return result;
+
+  const rows = await db
+    .select({
+      tournamentId: players.tournamentId,
+      registered: sql<number>`count(*) filter (where ${players.status} in ('registered', 'checked_in'))::int`,
+      waitlist: sql<number>`count(*) filter (where ${players.status} = 'waitlist')::int`,
+      checkedIn: sql<number>`count(*) filter (where ${players.status} = 'checked_in')::int`,
+    })
+    .from(players)
+    .where(inArray(players.tournamentId, uniqueIds))
+    .groupBy(players.tournamentId);
+
+  for (const id of uniqueIds) {
+    result.set(id, EMPTY_REGISTRATION_STATS);
+  }
+  for (const row of rows) {
+    result.set(row.tournamentId, mapRegistrationStatsRow(row));
+  }
+
+  return result;
 }
 
 export async function getActiveRound(tournamentId: string) {

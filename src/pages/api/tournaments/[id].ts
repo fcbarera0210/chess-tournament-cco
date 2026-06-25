@@ -5,6 +5,7 @@ import { tournaments } from '../../../lib/db/schema';
 import { getTournamentById, getRegistrationStats } from '../../../lib/tournament';
 import { withAdmin } from '../../../lib/session';
 import { buildTournamentUpdates, assertFeaturedRegistrationUnique } from '../../../lib/tournament-update';
+import { invalidatePublicTournamentCache } from '../../../lib/cache-invalidation';
 
 export const prerender = false;
 
@@ -25,7 +26,7 @@ export const GET: APIRoute = async ({ params }) => {
   });
 };
 
-export const PATCH: APIRoute = async ({ request, params }) =>
+export const PATCH: APIRoute = async ({ request, params, cache }) =>
   withAdmin(request, async () => {
     const id = params.id;
     if (!id) {
@@ -54,6 +55,8 @@ export const PATCH: APIRoute = async ({ request, params }) =>
       .set(updates)
       .where(eq(tournaments.id, id))
       .returning();
+
+    await invalidatePublicTournamentCache(cache, updated.slug);
 
     return new Response(JSON.stringify({ tournament: updated }), {
       headers: { 'Content-Type': 'application/json' },

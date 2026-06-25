@@ -1,6 +1,7 @@
 ---
 import PillButton from './PillButton.astro';
-import { SpotsCounter } from '../react/SpotsCounter';
+import SpotsBadge from './SpotsBadge.astro';
+import type { FeaturedSpotsInfo } from '../../lib/home-page';
 
 interface Props {
   tournamentName?: string;
@@ -9,6 +10,7 @@ interface Props {
   showRegistration?: boolean;
   eventDate?: string;
   venue?: string;
+  spotsInfo?: FeaturedSpotsInfo | null;
 }
 
 const {
@@ -18,6 +20,7 @@ const {
   showRegistration = false,
   eventDate = '',
   venue = '',
+  spotsInfo = null,
 } = Astro.props;
 ---
 
@@ -56,7 +59,7 @@ const {
           </p>
           {slug && showRegistration && (
             <div class="mt-8 flex justify-center">
-              <SpotsCounter client:load slug={slug} />
+              <SpotsBadge spotsInfo={spotsInfo} />
             </div>
           )}
           {slug && (

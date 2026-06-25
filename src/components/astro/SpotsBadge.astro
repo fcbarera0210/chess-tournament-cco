@@ -1,0 +1,29 @@
+---
+import type { FeaturedSpotsInfo } from '../../lib/home-page';
+
+interface Props {
+  spotsInfo: FeaturedSpotsInfo | null;
+}
+
+const { spotsInfo } = Astro.props;
+---
+
+{
+  !spotsInfo ? (
+    <span class="inline-flex items-center rounded-full border border-accent/30 bg-accent/5 px-4 py-1.5 text-sm font-medium text-accent">
+      Torneo en configuración
+    </span>
+  ) : spotsInfo.registrationOpen ? (
+    <span class="inline-flex items-center rounded-full border border-ink/10 bg-ink/5 px-4 py-1.5 text-sm font-semibold text-ink">
+      {spotsInfo.registered} / {spotsInfo.maxPlayers} plazas ocupadas
+    </span>
+  ) : spotsInfo.waitlistAvailable ? (
+    <span class="inline-flex items-center rounded-full border border-pending/30 bg-pending/10 px-4 py-1.5 text-sm font-semibold text-pending">
+      Cupo completo — lista de espera disponible
+    </span>
+  ) : (
+    <span class="inline-flex items-center rounded-full border border-border bg-surface px-4 py-1.5 text-sm font-medium text-muted">
+      Inscripciones cerradas
+    </span>
+  )
+}

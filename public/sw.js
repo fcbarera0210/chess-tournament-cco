@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chess-clock-v1';
+const CACHE_NAME = 'chess-clock-v2';
 const PRECACHE_URLS = ['/reloj', '/favicon.svg', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
@@ -21,6 +21,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  if (!url.pathname.startsWith('/reloj')) return;
 
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
