@@ -17,26 +17,6 @@ export const CHESS_SVG_SIZE = {
 
 export type ChessSvgName = keyof typeof CHESS_SVG_SIZE;
 
-export const CHESS_SPRITE_URL = '/images/chess/pieces-sprite.svg';
-
 export function chessSvgSrc(name: ChessSvgName): string {
   return `/images/chess/${name}.svg`;
-}
-
-export function chessSpritePieceIds(): ChessSvgName[] {
-  return [
-    'b-pawn',
-    'b-queen',
-    'b-king',
-    'b-rook',
-    'w-pawn',
-    'w-knight-front',
-    'w-king',
-    'w-queen',
-    'w-bishop',
-  ];
-}
-
-export function isSpritePiece(name: ChessSvgName): boolean {
-  return (chessSpritePieceIds() as string[]).includes(name);
 }

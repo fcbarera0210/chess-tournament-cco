@@ -17,6 +17,14 @@ import {
 
 type Phase = 'setup' | 'playing' | 'paused' | 'finished';
 
+type TimeEditState = {
+  active: boolean;
+  target: ClockPlayer | null;
+  showCustomForm: boolean;
+};
+
+const EMPTY_TIME_EDIT: TimeEditState = { active: false, target: null, showCustomForm: false };
+
 function controlsMatch(a: TimeControl, b: TimeControl): boolean {
   return a.minutes === b.minutes && a.incrementSeconds === b.incrementSeconds;
 }
@@ -32,6 +40,9 @@ export function ChessClock() {
   const [blackMs, setBlackMs] = useState(() => initialTimeMs(control));
   const [winner, setWinner] = useState<ClockPlayer | null>(null);
   const [lowTimePulse, setLowTimePulse] = useState(false);
+  const [timeEdit, setTimeEdit] = useState<TimeEditState>(EMPTY_TIME_EDIT);
+  const [customEditMinutes, setCustomEditMinutes] = useState('0');
+  const [customEditSeconds, setCustomEditSeconds] = useState('0');
 
   const snapshotRef = useRef<ClockSnapshot>({
     whiteMs: initialTimeMs(control),
@@ -185,11 +196,13 @@ export function ChessClock() {
     if (phase !== 'playing') return;
     stopLoop();
     snapshotRef.current = { ...snapshotRef.current, running: false };
+    setTimeEdit(EMPTY_TIME_EDIT);
     setPhase('paused');
   }
 
   function resumeGame() {
     if (phase !== 'paused') return;
+    setTimeEdit(EMPTY_TIME_EDIT);
     snapshotRef.current = { ...snapshotRef.current, running: true };
     setPhase('playing');
     startLoop();
@@ -202,42 +215,107 @@ export function ChessClock() {
     setCustomMinutes(String(saved.minutes));
     setCustomIncrement(String(saved.incrementSeconds));
     setWinner(null);
+    setTimeEdit(EMPTY_TIME_EDIT);
     setPhase('setup');
+  }
+
+  function startTimeEdit() {
+    setTimeEdit({ active: true, target: null, showCustomForm: false });
+  }
+
+  function finishTimeEdit() {
+    setTimeEdit(EMPTY_TIME_EDIT);
+  }
+
+  function selectEditTarget(player: ClockPlayer) {
+    setTimeEdit((prev) => ({ ...prev, target: player, showCustomForm: false }));
+  }
+
+  function setPlayerTime(player: ClockPlayer, ms: number) {
+    const clamped = Math.max(0, ms);
+    const snapshot = snapshotRef.current;
+    if (player === 'white') {
+      snapshotRef.current = { ...snapshot, whiteMs: clamped };
+      setWhiteMs(clamped);
+    } else {
+      snapshotRef.current = { ...snapshot, blackMs: clamped };
+      setBlackMs(clamped);
+    }
+  }
+
+  function adjustPlayerTime(player: ClockPlayer, deltaMs: number) {
+    const current = player === 'white' ? snapshotRef.current.whiteMs : snapshotRef.current.blackMs;
+    setPlayerTime(player, current + deltaMs);
+  }
+
+  function openCustomTimeEdit() {
+    if (!timeEdit.target) return;
+    const ms = timeEdit.target === 'white' ? whiteMs : blackMs;
+    const totalSeconds = Math.ceil(ms / 1000);
+    setCustomEditMinutes(String(Math.floor(totalSeconds / 60)));
+    setCustomEditSeconds(String(totalSeconds % 60));
+    setTimeEdit((prev) => ({ ...prev, showCustomForm: true }));
+  }
+
+  function applyCustomTimeEdit() {
+    if (!timeEdit.target) return;
+    const minutes = Math.max(0, Number.parseInt(customEditMinutes, 10) || 0);
+    const seconds = Math.min(59, Math.max(0, Number.parseInt(customEditSeconds, 10) || 0));
+    setPlayerTime(timeEdit.target, (minutes * 60 + seconds) * 1000);
+    setTimeEdit((prev) => ({ ...prev, showCustomForm: false }));
   }
 
   function renderPlayerPanel(player: ClockPlayer, rotated = false) {
     const ms = player === 'white' ? whiteMs : blackMs;
     const isActive = phase === 'playing' && active === player;
+    const isEditSelected = timeEdit.active && timeEdit.target === player;
+    const isEditSelectable = phase === 'paused' && timeEdit.active;
     const showTenths = phase !== 'setup' && shouldShowTenths(ms);
     const isLow = phase === 'playing' && isActive && ms < 10_000;
     const label = player === 'white' ? 'Blancas' : 'Negras';
 
-    const panelBg = isActive
-      ? lowTimePulse && isLow
-        ? 'bg-[#5c2020]'
-        : 'bg-[#1e5c52]'
-      : 'bg-[#0f0f0f]';
+    let panelBg = 'bg-[#0f0f0f]';
+    if (isEditSelected) {
+      panelBg = 'bg-pending/35 ring-2 ring-inset ring-pending';
+    } else if (isActive) {
+      panelBg =
+        lowTimePulse && isLow ? 'bg-[#5c2020]' : 'bg-[#1e5c52]';
+    }
+
+    const handlePanelClick = () => {
+      if (isEditSelectable) {
+        selectEditTarget(player);
+        return;
+      }
+      handlePlayerTap(player);
+    };
 
     return (
       <button
         type="button"
-        disabled={phase !== 'playing' || !isActive}
-        onClick={() => handlePlayerTap(player)}
+        disabled={
+          phase === 'finished' ||
+          (phase === 'playing' && !isActive) ||
+          (phase === 'paused' && !timeEdit.active)
+        }
+        onClick={handlePanelClick}
         className={[
           'relative flex flex-1 flex-col items-center justify-center gap-2 border-0 p-4 transition-colors duration-300 select-none',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-white/50',
           rotated ? 'rotate-180' : '',
           panelBg,
-          isActive && 'ring-2 ring-inset ring-white/25',
-          phase === 'playing' && isActive ? 'cursor-pointer active:brightness-110' : 'cursor-default',
+          isActive && !isEditSelected && 'ring-2 ring-inset ring-white/25',
+          isEditSelectable && 'cursor-pointer hover:bg-white/5',
+          phase === 'playing' && isActive ? 'cursor-pointer active:brightness-110' : '',
+          phase === 'playing' && !isActive ? 'cursor-default' : '',
         ].join(' ')}
-        aria-label={`${label}${isActive ? ', tu turno' : ''}`}
-        aria-pressed={isActive}
+        aria-label={`${label}${isActive ? ', tu turno' : ''}${isEditSelected ? ', seleccionado para editar' : ''}`}
+        aria-pressed={isActive || isEditSelected}
       >
         <span
           className={[
             'text-sm font-medium tracking-wide uppercase',
-            isActive ? 'text-white/90' : 'text-white/35',
+            isEditSelected ? 'text-white' : isActive ? 'text-white/90' : 'text-white/35',
           ].join(' ')}
         >
           {label}
@@ -246,14 +324,23 @@ export function ChessClock() {
           className={[
             'font-display tabular-nums leading-none font-bold tracking-tight',
             showTenths ? 'text-[clamp(4rem,18vw,9rem)]' : 'text-[clamp(3.5rem,16vw,8rem)]',
-            isLow ? 'text-accent' : isActive ? 'text-white' : 'text-white/30',
+            isEditSelected ? 'text-white' : isLow ? 'text-accent' : isActive ? 'text-white' : 'text-white/30',
           ].join(' ')}
         >
           {formatClockTime(ms, showTenths)}
         </span>
         {control.incrementSeconds > 0 && (
-          <span className={isActive ? 'text-xs text-white/70' : 'text-xs text-white/25'}>
+          <span
+            className={
+              isEditSelected || isActive ? 'text-xs text-white/70' : 'text-xs text-white/25'
+            }
+          >
             +{control.incrementSeconds}s por jugada
+          </span>
+        )}
+        {isEditSelectable && !timeEdit.target && (
+          <span className="absolute bottom-4 text-xs font-semibold tracking-wider text-white/60 uppercase">
+            Toca para seleccionar
           </span>
         )}
         {isActive && phase === 'playing' && (
@@ -262,6 +349,88 @@ export function ChessClock() {
           </span>
         )}
       </button>
+    );
+  }
+
+  function renderTimeEditBar() {
+    if (!timeEdit.active) return null;
+
+    const editBtnClass =
+      'rounded-full border border-white/20 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/10';
+
+    if (timeEdit.showCustomForm && timeEdit.target) {
+      const targetLabel = timeEdit.target === 'white' ? 'Blancas' : 'Negras';
+      return (
+        <div className="shrink-0 border-b border-white/10 bg-pending/15 px-4 py-4">
+          <p className="mb-3 text-center text-sm font-medium text-white/80">
+            Tiempo de {targetLabel}
+          </p>
+          <div className="mx-auto flex max-w-md flex-wrap items-end justify-center gap-3">
+            <label className="block text-sm">
+              <span className="mb-1 block text-white/60">Min</span>
+              <input
+                type="number"
+                min={0}
+                max={180}
+                value={customEditMinutes}
+                onChange={(e) => setCustomEditMinutes(e.target.value)}
+                className="w-20 rounded-xl border border-white/15 bg-dark px-3 py-2.5 text-center text-white outline-none focus:border-pending"
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block text-white/60">Seg</span>
+              <input
+                type="number"
+                min={0}
+                max={59}
+                value={customEditSeconds}
+                onChange={(e) => setCustomEditSeconds(e.target.value)}
+                className="w-20 rounded-xl border border-white/15 bg-dark px-3 py-2.5 text-center text-white outline-none focus:border-pending"
+              />
+            </label>
+            <button type="button" onClick={applyCustomTimeEdit} className={editBtnClass}>
+              Aplicar
+            </button>
+            <button
+              type="button"
+              onClick={() => setTimeEdit((prev) => ({ ...prev, showCustomForm: false }))}
+              className={editBtnClass}
+            >
+              Volver
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="shrink-0 border-b border-white/10 bg-pending/15 px-4 py-4">
+        {!timeEdit.target ? (
+          <p className="text-center text-sm font-medium text-white/80">
+            Selecciona el reloj que quieres modificar
+          </p>
+        ) : (
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => adjustPlayerTime(timeEdit.target!, 10_000)}
+              className={editBtnClass}
+            >
+              +10 s
+            </button>
+            <button
+              type="button"
+              onClick={() => adjustPlayerTime(timeEdit.target!, 60_000)}
+              className={editBtnClass}
+            >
+              +1 min
+            </button>
+            <button type="button" onClick={openCustomTimeEdit} className={editBtnClass}>
+              Editar
+            </button>
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -274,35 +443,62 @@ export function ChessClock() {
             {formatTimeControl(control)} · funciona sin conexión
           </p>
         </div>
-        {phase !== 'setup' && (
-          <div className="flex flex-wrap justify-end gap-2">
-            {phase === 'playing' && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <a
+            href="/"
+            className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+          >
+            Inicio
+          </a>
+          {phase !== 'setup' && (
+            <>
+              {phase === 'playing' && (
+                <button
+                  type="button"
+                  onClick={pauseGame}
+                  className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                >
+                  Pausar
+                </button>
+              )}
+              {phase === 'paused' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={resumeGame}
+                    className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink hover:opacity-90"
+                  >
+                    Reanudar
+                  </button>
+                  {timeEdit.active ? (
+                    <button
+                      type="button"
+                      onClick={finishTimeEdit}
+                      className="rounded-full border border-pending/50 bg-pending/20 px-4 py-2 text-sm font-semibold text-white hover:bg-pending/30"
+                    >
+                      Listo
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={startTimeEdit}
+                      className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                    >
+                      Editar tiempos
+                    </button>
+                  )}
+                </>
+              )}
               <button
                 type="button"
-                onClick={pauseGame}
+                onClick={resetToSetup}
                 className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
               >
-                Pausar
+                Reiniciar
               </button>
-            )}
-            {phase === 'paused' && (
-              <button
-                type="button"
-                onClick={resumeGame}
-                className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink hover:opacity-90"
-              >
-                Reanudar
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={resetToSetup}
-              className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
-            >
-              Reiniciar
-            </button>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </header>
 
       {phase === 'setup' ? (
@@ -390,11 +586,12 @@ export function ChessClock() {
               </p>
             </div>
           )}
-          {phase === 'paused' && (
+          {phase === 'paused' && !timeEdit.active && (
             <div className="shrink-0 border-b border-white/10 bg-white/10 px-4 py-3 text-center text-sm font-medium text-white/80">
               Partida en pausa
             </div>
           )}
+          {renderTimeEditBar()}
           <div className="flex min-h-0 flex-1 flex-col">
             {renderPlayerPanel('white', true)}
             <div className="h-px shrink-0 bg-white/15" aria-hidden="true" />

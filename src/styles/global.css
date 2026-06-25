@@ -1,16 +1,16 @@
-@import "@fontsource/dm-sans/400.css";
-@import "@fontsource/dm-sans/500.css";
-@import "@fontsource/dm-sans/600.css";
-@import "@fontsource/dm-sans/700.css";
-@import "@fontsource/syne/500.css";
-@import "@fontsource/syne/600.css";
-@import "@fontsource/syne/700.css";
-@import "@fontsource/syne/800.css";
+@import '@fontsource/merriweather/400.css';
+@import '@fontsource/merriweather/600.css';
+@import '@fontsource/merriweather/700.css';
+@import '@fontsource/merriweather/400-italic.css';
+@import '@fontsource/merriweather/600-italic.css';
+@import '@fontsource/merriweather/700-italic.css';
+@import "@fontsource/germania-one/400.css";
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Syne", system-ui, sans-serif;
-  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-display: "Germania One", serif;
+  --font-sans: "Merriweather", Georgia, serif;
+  --font-mono: "Merriweather", Georgia, serif;
   --color-bg: #f5f5f3;
   --color-surface: #ffffff;
   --color-ink: #0a0a0a;
@@ -52,8 +52,17 @@ html {
 
 body {
   font-family: var(--font-sans);
+  font-style: normal;
+  font-size: 1rem;
+  line-height: 1.3;
   background-color: var(--color-bg);
   color: var(--color-ink);
+}
+
+p,
+span,
+dd {
+  font-style: normal;
 }
 
 h1,
@@ -61,6 +70,28 @@ h2,
 h3,
 .font-display {
   font-family: var(--font-display);
+  font-style: normal;
+}
+
+/* Botones, badges y controles — Crimson Text normal */
+.btn-pill,
+.btn-pill *,
+button,
+input,
+textarea,
+select,
+label,
+a.rounded-full,
+button.rounded-full,
+span.rounded-full[class*='px-'],
+.num-badge {
+  font-style: normal;
+  font-size: 0.8rem;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+  font-style: normal;
 }
 
 /* Design system utilities */
@@ -111,7 +142,9 @@ h3,
   justify-content: center;
   border-radius: 9999px;
   padding: 0.75rem 1.75rem;
+  font-size: .8rem;
   font-weight: 600;
+  font-style: normal;
   transition: opacity 0.2s, transform 0.2s;
 }
 
@@ -158,6 +191,7 @@ h3,
   background: transparent;
   padding: 0.75rem 0;
   font-size: 1rem;
+  font-style: normal;
   outline: none;
   transition: border-color 0.2s;
 }

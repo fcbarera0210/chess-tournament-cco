@@ -1,5 +1,5 @@
 ---
-import { CHESS_SVG_SIZE, CHESS_SPRITE_URL, isSpritePiece, type ChessSvgName } from '../../lib/chess-svg-sizes';
+import { CHESS_SVG_SIZE, chessSvgSrc, type ChessSvgName } from '../../lib/chess-svg-sizes';
 
 interface Props {
   name: ChessSvgName;
@@ -10,30 +10,15 @@ interface Props {
 
 const { name, class: className = '', loading, decoding = 'async' } = Astro.props;
 const size = CHESS_SVG_SIZE[name];
-const useSprite = isSpritePiece(name);
 ---
 
-{
-  useSprite ? (
-    <svg
-      width={size.width}
-      height={size.height}
-      class={className}
-      aria-hidden="true"
-      focusable="false"
-    >
-      <use href={`${CHESS_SPRITE_URL}#${name}`} />
-    </svg>
-  ) : (
-    <img
-      src={`/images/chess/${name}.svg`}
-      alt=""
-      width={size.width}
-      height={size.height}
-      loading={loading}
-      decoding={decoding}
-      class={className}
-      aria-hidden="true"
-    />
-  )
-}
+<img
+  src={chessSvgSrc(name)}
+  alt=""
+  width={size.width}
+  height={size.height}
+  loading={loading}
+  decoding={decoding}
+  class={className}
+  aria-hidden="true"
+/>

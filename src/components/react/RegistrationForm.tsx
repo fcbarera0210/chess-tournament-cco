@@ -57,7 +57,7 @@ export function RegistrationForm({ slug, eventDate, venue }: Props) {
         <p className="mt-4 text-sm text-muted">
           Te esperamos el {eventDate} en {venue}.
         </p>
-        <a href="/clasificacion" className="btn-pill btn-pill-primary mt-8 inline-flex">
+        <a href={`/clasificacion/${slug}`} className="btn-pill btn-pill-primary mt-8 inline-flex">
           Ver estado del torneo
         </a>
       </div>

@@ -94,6 +94,17 @@ function KioskClock() {
   );
 }
 
+function KioskHomeLink({ className = '' }: { className?: string }) {
+  return (
+    <a
+      href="/"
+      className={`rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10 ${className}`}
+    >
+      ← Inicio
+    </a>
+  );
+}
+
 function KioskSidebar({
   slug,
   standingsTop,
@@ -295,9 +306,20 @@ export function LiveView({ slug, mode, cols = 3 }: Props) {
       : 0;
 
   if (!data) {
-    return (
-      <p className="text-center text-muted">Cargando estado del torneo...</p>
-    );
+    if (mode === 'kiosk') {
+      return (
+        <div className="mx-auto w-full max-w-7xl">
+          <div className="kiosk-shell flex min-h-[calc(100dvh-2rem)] items-center justify-center px-5 py-8 md:min-h-[calc(100dvh-3rem)] md:px-10 md:py-10">
+            <div className="kiosk-panel relative w-full max-w-2xl px-6 py-12 text-center">
+              <KioskHomeLink className="absolute top-4 left-4 md:top-5 md:left-5" />
+              <p className="text-white/70">Cargando estado del torneo...</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return <p className="text-center text-muted">Cargando estado del torneo...</p>;
   }
 
   const roundActive = data.round?.status === 'active';
@@ -307,7 +329,8 @@ export function LiveView({ slug, mode, cols = 3 }: Props) {
       <div className="mx-auto w-full max-w-7xl">
         <div className="kiosk-shell relative min-h-[calc(100dvh-2rem)] px-5 py-8 md:min-h-[calc(100dvh-3rem)] md:px-10 md:py-10">
           <div className="relative z-10 space-y-8">
-            <header className="kiosk-panel px-6 py-8 text-center">
+            <header className="kiosk-panel relative px-6 py-8 text-center">
+              <KioskHomeLink className="absolute top-4 left-4 md:top-5 md:left-5" />
               <h1 className="font-display text-4xl font-bold md:text-5xl">{data.tournament.name}</h1>
               {data.round ? (
                 <>
