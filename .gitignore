@@ -31,8 +31,9 @@ pnpm-debug.log*
 *.swp
 *.swo
 
-# scripts
+# scripts (local tooling; sprite generator is tracked for reference)
 scripts/
+!scripts/build-pieces-sprite.mjs
 
 # promo assets (local only)
 public/images/promo-story.png
