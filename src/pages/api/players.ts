@@ -87,7 +87,20 @@ export const PATCH: APIRoute = async ({ request, cache }) =>
       return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 404 });
     }
 
-    const body = await request.json();
+    let body: {
+      playerId?: string;
+      status?: string;
+      promoteFromWaitlist?: boolean;
+      name?: string;
+      contact?: string;
+      clubLevel?: string;
+    };
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(JSON.stringify({ error: 'Datos inválidos' }), { status: 400 });
+    }
+
     const { playerId, status, promoteFromWaitlist } = body;
 
     if (!playerId) {
@@ -111,6 +124,45 @@ export const PATCH: APIRoute = async ({ request, cache }) =>
       const [updated] = await db
         .update(players)
         .set({ status: 'registered' })
+        .where(and(eq(players.id, playerId), eq(players.tournamentId, tournament.id)))
+        .returning();
+
+      if (!updated) {
+        return new Response(JSON.stringify({ error: 'Jugador no encontrado' }), { status: 404 });
+      }
+
+      await invalidatePublicTournamentCache(cache, tournament.slug);
+
+      return new Response(JSON.stringify({ player: updated }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const profileUpdates: Partial<{ name: string; contact: string; clubLevel: string | null }> =
+      {};
+
+    if (typeof body.name === 'string') {
+      const trimmedName = body.name.trim();
+      if (trimmedName.length < 2) {
+        return new Response(JSON.stringify({ error: 'Nombre requerido (mínimo 2 caracteres)' }), {
+          status: 400,
+        });
+      }
+      profileUpdates.name = trimmedName;
+    }
+
+    if (typeof body.contact === 'string') {
+      profileUpdates.contact = body.contact.trim() || '—';
+    }
+
+    if (typeof body.clubLevel === 'string') {
+      profileUpdates.clubLevel = body.clubLevel.trim() || null;
+    }
+
+    if (Object.keys(profileUpdates).length > 0) {
+      const [updated] = await db
+        .update(players)
+        .set(profileUpdates)
         .where(and(eq(players.id, playerId), eq(players.tournamentId, tournament.id)))
         .returning();
 

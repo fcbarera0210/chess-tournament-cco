@@ -23,6 +23,8 @@ export function PlayersManager() {
   const [contact, setContact] = useState('');
   const [clubLevel, setClubLevel] = useState('');
   const [formError, setFormError] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
   const { run, isLoading } = useAsyncAction();
 
   const isFinished = tournament?.status === 'finished';
@@ -85,6 +87,44 @@ export function PlayersManager() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerId, promoteFromWaitlist: true }),
       });
+      await load();
+    });
+  }
+
+  function startEditingName(player: Player) {
+    setEditingId(player.id);
+    setEditName(player.name);
+  }
+
+  function cancelEditingName() {
+    setEditingId(null);
+    setEditName('');
+  }
+
+  async function savePlayerName(playerId: string) {
+    if (!tournamentId) return;
+
+    const trimmed = editName.trim();
+    if (trimmed.length < 2) {
+      showAdminToast('El nombre debe tener al menos 2 caracteres', 'error');
+      return;
+    }
+
+    await run(`edit:${playerId}`, async () => {
+      const res = await fetch(adminApiUrl('/api/players', tournamentId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId, name: trimmed }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showAdminToast(data.error ?? 'Error al guardar el nombre', 'error');
+        return;
+      }
+
+      showAdminToast('Nombre actualizado', 'success');
+      cancelEditingName();
       await load();
     });
   }
@@ -201,18 +241,71 @@ export function PlayersManager() {
               : 'Ningún jugador coincide con el filtro.'}
           </p>
         )}
-        {filtered.map((p) => (
+        {filtered.map((p) => {
+          const isEditingName = editingId === p.id;
+
+          return (
           <div key={p.id} className="admin-card p-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <p className="font-semibold">{p.name}</p>
-                {p.contact !== '—' && <p className="text-sm text-muted">{p.contact}</p>}
-                {p.clubLevel && <p className="text-xs text-muted">{p.clubLevel}</p>}
+              <div className="min-w-0 flex-1">
+                {isEditingName ? (
+                  <form
+                    className="flex flex-col gap-2 sm:flex-row sm:items-center"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      savePlayerName(p.id);
+                    }}
+                  >
+                    <input
+                      type="text"
+                      required
+                      minLength={2}
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="admin-input w-full sm:max-w-xs"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <AdminButton
+                        type="submit"
+                        className="px-3 py-2 text-sm"
+                        loading={isLoading(`edit:${p.id}`)}
+                      >
+                        Guardar
+                      </AdminButton>
+                      <AdminButton
+                        type="button"
+                        variant="secondary"
+                        className="px-3 py-2 text-sm"
+                        onClick={cancelEditingName}
+                      >
+                        Cancelar
+                      </AdminButton>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <p className="font-semibold">{p.name}</p>
+                    {p.contact !== '—' && <p className="text-sm text-muted">{p.contact}</p>}
+                    {p.clubLevel && <p className="text-xs text-muted">{p.clubLevel}</p>}
+                  </>
+                )}
               </div>
               <span className="admin-chip admin-chip-inactive text-xs">
                 {statusLabel[p.status] ?? p.status}
               </span>
             </div>
+            {!isEditingName && (
+              <div className="mt-3">
+                <AdminButton
+                  variant="secondary"
+                  className="px-3 py-2 text-sm"
+                  onClick={() => startEditingName(p)}
+                >
+                  Editar nombre
+                </AdminButton>
+              </div>
+            )}
             {!isFinished && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {p.status !== 'checked_in' && p.status !== 'withdrawn' && (
@@ -257,7 +350,8 @@ export function PlayersManager() {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
