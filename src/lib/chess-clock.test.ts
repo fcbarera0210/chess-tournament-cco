@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  assignSidesFromFirstTap,
   formatClockTime,
   formatTimeControl,
   initialTimeMs,
@@ -38,6 +39,7 @@ describe('chess-clock', () => {
       blackMs: 60_000,
       active: 'white' as const,
       running: true,
+      sides: { top: 'white' as const, bottom: 'black' as const },
     };
 
     const next = tickClock(snapshot, 5_000, 0);
@@ -46,12 +48,26 @@ describe('chess-clock', () => {
     expect(next.running).toBe(true);
   });
 
+  it('does not tick before first tap', () => {
+    const snapshot = {
+      whiteMs: 60_000,
+      blackMs: 60_000,
+      active: null,
+      running: false,
+      sides: { top: null, bottom: null },
+    };
+
+    const next = tickClock(snapshot, 5_000, 0);
+    expect(next).toEqual(snapshot);
+  });
+
   it('stops when time runs out', () => {
     const snapshot = {
       whiteMs: 1_000,
       blackMs: 60_000,
       active: 'white' as const,
       running: true,
+      sides: { top: 'white' as const, bottom: 'black' as const },
     };
 
     const next = tickClock(snapshot, 2_000, 0);
@@ -65,12 +81,19 @@ describe('chess-clock', () => {
       blackMs: 60_000,
       active: 'white' as const,
       running: true,
+      sides: { top: 'white' as const, bottom: 'black' as const },
     };
 
     const { snapshot: next, finished } = switchTurn(snapshot, 5_000);
     expect(finished).toBeNull();
     expect(next.whiteMs).toBe(35_000);
     expect(next.active).toBe('black');
+    expect(next.sides).toEqual(snapshot.sides);
+  });
+
+  it('assigns sides from first tap', () => {
+    expect(assignSidesFromFirstTap('top')).toEqual({ top: 'white', bottom: 'black' });
+    expect(assignSidesFromFirstTap('bottom')).toEqual({ top: 'black', bottom: 'white' });
   });
 
   it('formats and initializes time control', () => {

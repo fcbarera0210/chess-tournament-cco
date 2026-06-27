@@ -4,6 +4,12 @@ export type TimeControl = {
 };
 
 export type ClockPlayer = 'white' | 'black';
+export type PanelSide = 'top' | 'bottom';
+
+export type SideAssignment = {
+  top: ClockPlayer | null;
+  bottom: ClockPlayer | null;
+};
 
 export const CLOCK_PRESETS: Array<{ label: string; control: TimeControl }> = [
   { label: '1+0', control: { minutes: 1, incrementSeconds: 0 } },
@@ -82,12 +88,19 @@ export function saveTimeControl(control: TimeControl): void {
 export type ClockSnapshot = {
   whiteMs: number;
   blackMs: number;
-  active: ClockPlayer;
+  active: ClockPlayer | null;
   running: boolean;
+  sides: SideAssignment;
 };
 
+export function assignSidesFromFirstTap(side: PanelSide): SideAssignment {
+  return side === 'top'
+    ? { top: 'white', bottom: 'black' }
+    : { top: 'black', bottom: 'white' };
+}
+
 export function tickClock(snapshot: ClockSnapshot, now: number, lastTick: number): ClockSnapshot {
-  if (!snapshot.running) return snapshot;
+  if (!snapshot.running || snapshot.active === null) return snapshot;
 
   const elapsed = now - lastTick;
   if (elapsed <= 0) return snapshot;
@@ -105,7 +118,7 @@ export function switchTurn(
   snapshot: ClockSnapshot,
   incrementMs: number,
 ): { snapshot: ClockSnapshot; finished: ClockPlayer | null } {
-  if (!snapshot.running) {
+  if (!snapshot.running || snapshot.active === null) {
     return { snapshot, finished: null };
   }
 
@@ -115,8 +128,8 @@ export function switchTurn(
     }
     return {
       snapshot: {
+        ...snapshot,
         whiteMs: snapshot.whiteMs + incrementMs,
-        blackMs: snapshot.blackMs,
         active: 'black',
         running: true,
       },
@@ -130,7 +143,7 @@ export function switchTurn(
 
   return {
     snapshot: {
-      whiteMs: snapshot.whiteMs,
+      ...snapshot,
       blackMs: snapshot.blackMs + incrementMs,
       active: 'white',
       running: true,

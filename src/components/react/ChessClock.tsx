@@ -10,8 +10,11 @@ import {
   shouldShowTenths,
   switchTurn,
   tickClock,
+  assignSidesFromFirstTap,
   type ClockPlayer,
   type ClockSnapshot,
+  type PanelSide,
+  type SideAssignment,
   type TimeControl,
 } from '../../lib/chess-clock';
 
@@ -22,6 +25,19 @@ type TimeEditState = {
   target: ClockPlayer | null;
   showCustomForm: boolean;
 };
+
+const EMPTY_SIDES: SideAssignment = { top: null, bottom: null };
+
+function createInitialSnapshot(control: TimeControl): ClockSnapshot {
+  const startMs = initialTimeMs(control);
+  return {
+    whiteMs: startMs,
+    blackMs: startMs,
+    active: null,
+    running: false,
+    sides: { ...EMPTY_SIDES },
+  };
+}
 
 const EMPTY_TIME_EDIT: TimeEditState = { active: false, target: null, showCustomForm: false };
 
@@ -35,7 +51,8 @@ export function ChessClock() {
   const [customMinutes, setCustomMinutes] = useState(String(control.minutes));
   const [customIncrement, setCustomIncrement] = useState(String(control.incrementSeconds));
   const [customError, setCustomError] = useState<string | null>(null);
-  const [active, setActive] = useState<ClockPlayer>('white');
+  const [active, setActive] = useState<ClockPlayer | null>(null);
+  const [sides, setSides] = useState<SideAssignment>(EMPTY_SIDES);
   const [whiteMs, setWhiteMs] = useState(() => initialTimeMs(control));
   const [blackMs, setBlackMs] = useState(() => initialTimeMs(control));
   const [winner, setWinner] = useState<ClockPlayer | null>(null);
@@ -44,12 +61,7 @@ export function ChessClock() {
   const [customEditMinutes, setCustomEditMinutes] = useState('0');
   const [customEditSeconds, setCustomEditSeconds] = useState('0');
 
-  const snapshotRef = useRef<ClockSnapshot>({
-    whiteMs: initialTimeMs(control),
-    blackMs: initialTimeMs(control),
-    active: 'white',
-    running: false,
-  });
+  const snapshotRef = useRef<ClockSnapshot>(createInitialSnapshot(control));
   const lastTickRef = useRef(0);
   const rafRef = useRef<number | null>(null);
 
@@ -58,6 +70,7 @@ export function ChessClock() {
     setWhiteMs(snapshot.whiteMs);
     setBlackMs(snapshot.blackMs);
     setActive(snapshot.active);
+    setSides(snapshot.sides);
   }, []);
 
   const stopLoop = useCallback(() => {
@@ -94,8 +107,9 @@ export function ChessClock() {
       }
 
       if (!next.running) {
-        const loser = next.active;
-        finishGame(loser);
+        if (next.active) {
+          finishGame(next.active);
+        }
         return;
       }
 
@@ -131,8 +145,13 @@ export function ChessClock() {
   }, [phase]);
 
   useEffect(() => {
+    if (phase !== 'playing' || active === null) {
+      setLowTimePulse(false);
+      return;
+    }
+
     const activeMs = active === 'white' ? whiteMs : blackMs;
-    if (phase !== 'playing' || activeMs >= 10_000) {
+    if (activeMs >= 10_000) {
       setLowTimePulse(false);
       return;
     }
@@ -163,32 +182,42 @@ export function ChessClock() {
   }
 
   function startGame() {
-    const startMs = initialTimeMs(control);
-    const snapshot: ClockSnapshot = {
-      whiteMs: startMs,
-      blackMs: startMs,
-      active: 'white',
-      running: true,
-    };
+    const snapshot = createInitialSnapshot(control);
     syncFromSnapshot(snapshot);
     setWinner(null);
     setPhase('playing');
-    startLoop();
   }
 
-  function handlePlayerTap(player: ClockPlayer) {
+  function handlePanelTap(panel: PanelSide) {
     if (phase !== 'playing') return;
-    if (player !== snapshotRef.current.active) return;
+
+    const snapshot = snapshotRef.current;
+
+    if (snapshot.sides.top === null) {
+      const sides = assignSidesFromFirstTap(panel);
+      const nextSnapshot: ClockSnapshot = {
+        ...snapshot,
+        sides,
+        active: 'white',
+        running: true,
+      };
+      syncFromSnapshot(nextSnapshot);
+      startLoop();
+      return;
+    }
+
+    const panelPlayer = snapshot.sides[panel];
+    if (panelPlayer !== snapshot.active) return;
 
     const incrementMs = control.incrementSeconds * 1000;
-    const { snapshot, finished } = switchTurn(snapshotRef.current, incrementMs);
+    const { snapshot: next, finished } = switchTurn(snapshot, incrementMs);
 
     if (finished) {
       finishGame(finished);
       return;
     }
 
-    syncFromSnapshot(snapshot);
+    syncFromSnapshot(next);
     lastTickRef.current = performance.now();
   }
 
@@ -203,9 +232,14 @@ export function ChessClock() {
   function resumeGame() {
     if (phase !== 'paused') return;
     setTimeEdit(EMPTY_TIME_EDIT);
-    snapshotRef.current = { ...snapshotRef.current, running: true };
+    const snapshot = snapshotRef.current;
+    if (snapshot.active !== null) {
+      snapshotRef.current = { ...snapshot, running: true };
+      setPhase('playing');
+      startLoop();
+      return;
+    }
     setPhase('playing');
-    startLoop();
   }
 
   function resetToSetup() {
@@ -265,39 +299,57 @@ export function ChessClock() {
     setTimeEdit((prev) => ({ ...prev, showCustomForm: false }));
   }
 
-  function renderPlayerPanel(player: ClockPlayer, rotated = false) {
-    const ms = player === 'white' ? whiteMs : blackMs;
-    const isActive = phase === 'playing' && active === player;
-    const isEditSelected = timeEdit.active && timeEdit.target === player;
-    const isEditSelectable = phase === 'paused' && timeEdit.active;
+  function renderPlayerPanel(panel: PanelSide, rotated = false) {
+    const assignedPlayer = sides[panel];
+    const ms =
+      assignedPlayer === 'white'
+        ? whiteMs
+        : assignedPlayer === 'black'
+          ? blackMs
+          : whiteMs;
+    const awaitingStart = phase === 'playing' && sides.top === null;
+    const isActive =
+      phase === 'playing' && active !== null && assignedPlayer !== null && active === assignedPlayer;
+    const isEditSelected =
+      timeEdit.active && assignedPlayer !== null && timeEdit.target === assignedPlayer;
+    const isEditSelectable = phase === 'paused' && timeEdit.active && assignedPlayer !== null;
     const showTenths = phase !== 'setup' && shouldShowTenths(ms);
     const isLow = phase === 'playing' && isActive && ms < 10_000;
-    const label = player === 'white' ? 'Blancas' : 'Negras';
+    const label =
+      assignedPlayer === 'white'
+        ? 'Blancas'
+        : assignedPlayer === 'black'
+          ? 'Negras'
+          : panel === 'top'
+            ? 'Arriba'
+            : 'Abajo';
 
     let panelBg = 'bg-[#0f0f0f]';
     if (isEditSelected) {
       panelBg = 'bg-pending/35 ring-2 ring-inset ring-pending';
     } else if (isActive) {
-      panelBg =
-        lowTimePulse && isLow ? 'bg-[#5c2020]' : 'bg-[#1e5c52]';
+      panelBg = lowTimePulse && isLow ? 'bg-[#5c2020]' : 'bg-[#1e5c52]';
+    } else if (awaitingStart) {
+      panelBg = 'hover:bg-white/5';
     }
 
     const handlePanelClick = () => {
-      if (isEditSelectable) {
-        selectEditTarget(player);
+      if (isEditSelectable && assignedPlayer) {
+        selectEditTarget(assignedPlayer);
         return;
       }
-      handlePlayerTap(player);
+      handlePanelTap(panel);
     };
+
+    const isDisabled =
+      phase === 'finished' ||
+      (phase === 'paused' && !timeEdit.active) ||
+      (phase === 'playing' && !awaitingStart && !isActive);
 
     return (
       <button
         type="button"
-        disabled={
-          phase === 'finished' ||
-          (phase === 'playing' && !isActive) ||
-          (phase === 'paused' && !timeEdit.active)
-        }
+        disabled={isDisabled}
         onClick={handlePanelClick}
         className={[
           'relative flex flex-1 flex-col items-center justify-center gap-2 border-0 p-4 transition-colors duration-300 select-none',
@@ -306,10 +358,11 @@ export function ChessClock() {
           panelBg,
           isActive && !isEditSelected && 'ring-2 ring-inset ring-white/25',
           isEditSelectable && 'cursor-pointer hover:bg-white/5',
+          awaitingStart && 'cursor-pointer active:brightness-110',
           phase === 'playing' && isActive ? 'cursor-pointer active:brightness-110' : '',
-          phase === 'playing' && !isActive ? 'cursor-default' : '',
+          phase === 'playing' && !isActive && !awaitingStart ? 'cursor-default' : '',
         ].join(' ')}
-        aria-label={`${label}${isActive ? ', tu turno' : ''}${isEditSelected ? ', seleccionado para editar' : ''}`}
+        aria-label={`${label}${isActive ? ', tu turno' : ''}${isEditSelected ? ', seleccionado para editar' : ''}${awaitingStart ? ', toca para jugar con blancas' : ''}`}
         aria-pressed={isActive || isEditSelected}
       >
         <span
@@ -341,6 +394,11 @@ export function ChessClock() {
         {isEditSelectable && !timeEdit.target && (
           <span className="absolute bottom-4 text-xs font-semibold tracking-wider text-white/60 uppercase">
             Toca para seleccionar
+          </span>
+        )}
+        {awaitingStart && (
+          <span className="absolute bottom-4 max-w-xs px-4 text-center text-xs font-semibold tracking-wider text-white/70 uppercase">
+            Toca para jugar con blancas
           </span>
         )}
         {isActive && phase === 'playing' && (
@@ -479,13 +537,15 @@ export function ChessClock() {
                       Listo
                     </button>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={startTimeEdit}
-                      className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
-                    >
-                      Editar tiempos
-                    </button>
+                    snapshotRef.current.sides.top !== null && (
+                      <button
+                        type="button"
+                        onClick={startTimeEdit}
+                        className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                      >
+                        Editar tiempos
+                      </button>
+                    )
                   )}
                 </>
               )}
@@ -572,8 +632,9 @@ export function ChessClock() {
               Iniciar partida · {formatTimeControl(control)}
             </button>
             <p className="max-w-md text-center text-xs text-white/45">
-              Coloca el dispositivo entre ambos jugadores. Cada uno toca su lado cuando completa
-              su jugada. La primera visita requiere internet; después funciona sin conexión.
+              Coloca el dispositivo entre ambos jugadores. Quien toque primero su lado juega con
+              blancas y arranca el reloj. Después, cada uno toca su lado al completar su jugada.
+              La primera visita requiere internet; después funciona sin conexión.
             </p>
           </div>
         </div>
@@ -591,11 +652,16 @@ export function ChessClock() {
               Partida en pausa
             </div>
           )}
+          {phase === 'playing' && sides.top === null && (
+            <div className="shrink-0 border-b border-white/10 bg-white/10 px-4 py-3 text-center text-sm font-medium text-white/80">
+              Toca tu lado para jugar con blancas e iniciar el reloj
+            </div>
+          )}
           {renderTimeEditBar()}
           <div className="flex min-h-0 flex-1 flex-col">
-            {renderPlayerPanel('white', true)}
+            {renderPlayerPanel('top', true)}
             <div className="h-px shrink-0 bg-white/15" aria-hidden="true" />
-            {renderPlayerPanel('black', false)}
+            {renderPlayerPanel('bottom', false)}
           </div>
         </div>
       )}
