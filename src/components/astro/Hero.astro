@@ -7,6 +7,7 @@ interface Props {
   tournamentName?: string;
   slug?: string;
   finished?: boolean;
+  status?: string;
   showRegistration?: boolean;
   eventDate?: string;
   venue?: string;
@@ -17,11 +18,14 @@ const {
   tournamentName = 'Chess Tournament Curicó',
   slug = '',
   finished = false,
+  status = '',
   showRegistration = false,
   eventDate = '',
   venue = '',
   spotsInfo = null,
 } = Astro.props;
+
+const isLive = !finished && status === 'live';
 ---
 
 <section class="hero-texture relative overflow-hidden rounded-3xl px-6 py-20 md:px-12 md:py-28">
@@ -48,6 +52,27 @@ const {
           {slug && (
             <div class="mt-8 flex flex-wrap justify-center gap-4">
               <PillButton href={`/torneo/${slug}`}>Ver resultados del torneo</PillButton>
+              <PillButton href={`/clasificacion/${slug}`} variant="outline">Clasificación</PillButton>
+            </div>
+          )}
+        </>
+      ) : isLive ? (
+        <>
+          <span class="mt-6 inline-flex rounded-full border border-pending/30 bg-pending/10 px-4 py-1.5 text-sm font-semibold text-pending">
+            En juego
+          </span>
+          <p class="mx-auto mt-6 max-w-xl text-lg text-muted md:text-xl">
+            El torneo está en curso. Sigue la clasificación y las partidas en vivo.
+          </p>
+          {eventDate && (
+            <p class="mx-auto mt-3 max-w-xl capitalize text-muted">
+              {eventDate}
+              {venue ? ` · ${venue}` : ''}
+            </p>
+          )}
+          {slug && (
+            <div class="mt-8 flex flex-wrap justify-center gap-4">
+              <PillButton href={`/live/${slug}`}>Ver en vivo</PillButton>
               <PillButton href={`/clasificacion/${slug}`} variant="outline">Clasificación</PillButton>
             </div>
           )}

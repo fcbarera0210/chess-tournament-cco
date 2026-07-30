@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ImageUploader } from './ImageUploader';
 import { AdminButton } from './AdminButton';
+import { AdminConfirmDialog } from './AdminConfirmDialog';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
 import { showAdminToast } from '../../lib/admin-toast';
 import { useAdminTournament } from '../../hooks/useAdminTournament';
@@ -24,6 +25,7 @@ export function TournamentGalleryManager() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [pendingUrl, setPendingUrl] = useState('');
   const [pendingCaption, setPendingCaption] = useState('');
+  const [photoToDelete, setPhotoToDelete] = useState<Photo | null>(null);
   const { run, isLoading } = useAsyncAction();
 
   async function load() {
@@ -70,17 +72,21 @@ export function TournamentGalleryManager() {
     await load();
   }
 
-  async function removePhoto(id: string) {
-    if (!confirm('¿Eliminar esta foto de la galería?')) return;
+  async function confirmRemovePhoto() {
+    if (!photoToDelete || !tournamentId) return;
+    const id = photoToDelete.id;
     await run(`delete-${id}`, async () => {
-      const res = await fetch(adminApiUrl('/api/tournament/photos', tournamentId!), {
+      const res = await fetch(adminApiUrl('/api/tournament/photos', tournamentId), {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       });
       if (res.ok) {
         showAdminToast('Foto eliminada', 'success');
+        setPhotoToDelete(null);
         await load();
+      } else {
+        showAdminToast('Error al eliminar la foto', 'error');
       }
     });
   }
@@ -183,7 +189,7 @@ export function TournamentGalleryManager() {
                   <AdminButton
                     variant="danger"
                     loading={isLoading(`delete-${photo.id}`)}
-                    onClick={() => removePhoto(photo.id)}
+                    onClick={() => setPhotoToDelete(photo)}
                   >
                     Eliminar
                   </AdminButton>
@@ -193,6 +199,17 @@ export function TournamentGalleryManager() {
           ))
         )}
       </div>
+
+      <AdminConfirmDialog
+        open={!!photoToDelete}
+        title="Eliminar foto"
+        description="¿Eliminar esta foto de la galería? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        confirmVariant="danger"
+        loading={photoToDelete ? isLoading(`delete-${photoToDelete.id}`) : false}
+        onCancel={() => setPhotoToDelete(null)}
+        onConfirm={confirmRemovePhoto}
+      />
     </div>
   );
 }

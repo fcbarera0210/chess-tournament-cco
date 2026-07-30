@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AdminButton } from './AdminButton';
+import { AdminConfirmDialog } from './AdminConfirmDialog';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
 import { useAdminTournament } from '../../hooks/useAdminTournament';
 import { adminApiUrl } from '../../lib/admin-api';
@@ -24,11 +25,19 @@ type Tournament = {
   publicRegistration: boolean;
 };
 
+const SUCCESS_MESSAGES = new Set([
+  'Guardado',
+  'Rondas reiniciadas',
+  'Torneo reiniciado por completo',
+  'Exportación descargada',
+]);
+
 export function TournamentConfig() {
   const { tournamentId, loading: ctxLoading } = useAdminTournament();
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [message, setMessage] = useState('');
   const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [finishModalOpen, setFinishModalOpen] = useState(false);
   const { run, isLoading } = useAsyncAction();
 
   async function load() {
@@ -67,7 +76,8 @@ export function TournamentConfig() {
         setResetModalOpen(false);
         await load();
       } else {
-        setMessage('Error al reiniciar el torneo');
+        const data = await res.json().catch(() => ({}));
+        setMessage(data.error ?? 'Error al reiniciar el torneo');
       }
     });
   }
@@ -83,9 +93,11 @@ export function TournamentConfig() {
       });
       if (res.ok) {
         setMessage('Guardado');
+        setFinishModalOpen(false);
         await load();
       } else {
-        setMessage('Error al guardar');
+        const data = await res.json().catch(() => ({}));
+        setMessage(data.error ?? 'Error al guardar');
       }
     });
   }
@@ -97,7 +109,13 @@ export function TournamentConfig() {
     tournament.status === 'registration_open' ||
     tournament.status === 'registration_closed';
   const isFinished = tournament.status === 'finished';
-  const saving = isLoading('save-blur') || isLoading('format') || isLoading('registration') || isLoading('finished');
+  const saving =
+    isLoading('save-blur') ||
+    isLoading('format') ||
+    isLoading('registration') ||
+    isLoading('finished') ||
+    isLoading('visibility-home') ||
+    isLoading('visibility-reg');
   const resetting = isLoading('reset-rounds') || isLoading('reset-full');
 
   async function exportData() {
@@ -122,16 +140,7 @@ export function TournamentConfig() {
   return (
     <div className="space-y-6">
       {message && (
-        <p
-          className={`text-sm ${
-            message === 'Guardado' ||
-            message === 'Rondas reiniciadas' ||
-            message === 'Torneo reiniciado por completo' ||
-            message === 'Exportación descargada'
-              ? 'text-finished'
-              : 'text-muted'
-          }`}
-        >
+        <p className={`text-sm ${SUCCESS_MESSAGES.has(message) ? 'text-finished' : 'text-red-600'}`}>
           {message}
         </p>
       )}
@@ -269,7 +278,11 @@ export function TournamentConfig() {
               />
               <span>
                 <span className="block text-sm">Mostrar en home</span>
-                <span className="text-xs text-muted">Destacado activo o archivo al finalizar.</span>
+                <span className="text-xs text-muted">
+                  {isFinished
+                    ? 'Ya finalizado: el historial del home lista todos los torneos terminados.'
+                    : 'Destaca el torneo en el home mientras tenga inscripción abierta o esté en juego.'}
+                </span>
               </span>
             </label>
             <label className="flex cursor-pointer items-start gap-3">
@@ -286,7 +299,9 @@ export function TournamentConfig() {
               />
               <span>
                 <span className="block text-sm">Inscripción pública</span>
-                <span className="text-xs text-muted">Habilita formulario en /inscripcion/{tournament.slug}</span>
+                <span className="text-xs text-muted">
+                  Habilita formulario en /inscripcion/{tournament.slug}
+                </span>
               </span>
             </label>
           </div>
@@ -322,16 +337,7 @@ export function TournamentConfig() {
             <button
               type="button"
               disabled={isLoading('finished') || isFinished}
-              onClick={() => {
-                if (
-                  !confirm(
-                    '¿Marcar el torneo como finalizado? Los datos quedarán protegidos y la web mostrará el archivo público.',
-                  )
-                ) {
-                  return;
-                }
-                save({ status: 'finished' }, 'finished');
-              }}
+              onClick={() => setFinishModalOpen(true)}
               className={
                 tournament.status === 'finished'
                   ? 'admin-chip admin-chip-active'
@@ -362,20 +368,20 @@ export function TournamentConfig() {
       </div>
 
       {!isFinished && (
-      <div className="admin-card p-5">
-        <h2 className="font-display text-lg font-bold">Zona de pruebas</h2>
-        <p className="mt-2 text-sm text-muted">
-          Borra datos de prueba del torneo. Esta acción no se puede deshacer.
-        </p>
-        <AdminButton
-          variant="danger"
-          className="mt-4"
-          onClick={() => setResetModalOpen(true)}
-          disabled={resetting}
-        >
-          Reiniciar torneo
-        </AdminButton>
-      </div>
+        <div className="admin-card p-5">
+          <h2 className="font-display text-lg font-bold">Zona de pruebas</h2>
+          <p className="mt-2 text-sm text-muted">
+            Borra datos de prueba del torneo. Esta acción no se puede deshacer.
+          </p>
+          <AdminButton
+            variant="danger"
+            className="mt-4"
+            onClick={() => setResetModalOpen(true)}
+            disabled={resetting}
+          >
+            Reiniciar torneo
+          </AdminButton>
+        </div>
       )}
 
       {resetModalOpen && (
@@ -428,6 +434,17 @@ export function TournamentConfig() {
           </div>
         </div>
       )}
+
+      <AdminConfirmDialog
+        open={finishModalOpen}
+        title="Finalizar torneo"
+        description="¿Marcar el torneo como finalizado? Los datos quedarán protegidos y la web mostrará el archivo público. La inscripción pública se desactivará automáticamente."
+        confirmLabel="Finalizar"
+        confirmVariant="danger"
+        loading={isLoading('finished')}
+        onCancel={() => setFinishModalOpen(false)}
+        onConfirm={() => save({ status: 'finished' }, 'finished')}
+      />
     </div>
   );
 }

@@ -43,6 +43,11 @@ export function buildTournamentUpdates(
     }
   }
 
+  // Finalizar implica cerrar inscripción pública (regla de validateTournamentFlags).
+  if (updates.status === 'finished') {
+    updates.publicRegistration = false;
+  }
+
   const merged = { ...current, ...updates };
   const flagError = validateTournamentFlags({
     showOnHome: merged.showOnHome,

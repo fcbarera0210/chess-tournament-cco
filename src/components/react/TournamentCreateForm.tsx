@@ -121,7 +121,7 @@ export function TournamentCreateForm() {
             <span>
               <span className="block text-sm font-medium">Mostrar en home</span>
               <span className="text-xs text-muted">
-                Visible como torneo destacado o en archivos públicos al finalizar.
+                Visible en el home mientras el torneo esté con inscripción abierta o en juego.
               </span>
             </span>
           </label>

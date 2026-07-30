@@ -2,7 +2,7 @@ import { eq, and, inArray, sql, asc, desc, ne } from 'drizzle-orm';
 import { db } from './db';
 import { tournaments, players, rounds, games } from './db/schema';
 
-const FEATURED_STATUSES = ['registration_open', 'registration_closed', 'live'] as const;
+const FEATURED_STATUSES = ['registration_open', 'live'] as const;
 
 export async function getTournamentBySlug(slug: string) {
   const [tournament] = await db
@@ -43,17 +43,14 @@ export async function getFeaturedTournament() {
   const open = candidates.find((t) => t.status === 'registration_open');
   if (open) return open;
 
-  const live = candidates.find((t) => t.status === 'live');
-  if (live) return live;
-
-  return candidates[0] ?? null;
+  return candidates.find((t) => t.status === 'live') ?? null;
 }
 
 export async function getPublicArchiveTournaments() {
   return db
     .select()
     .from(tournaments)
-    .where(and(eq(tournaments.showOnHome, true), eq(tournaments.status, 'finished')))
+    .where(eq(tournaments.status, 'finished'))
     .orderBy(desc(tournaments.eventDate));
 }
 

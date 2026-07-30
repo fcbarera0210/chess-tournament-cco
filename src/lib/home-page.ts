@@ -70,6 +70,7 @@ export async function loadHomePageData(): Promise<HomePageData> {
     if (fallback) archives = [fallback];
   }
 
+  // Sin torneo activo destacado: hero de archivo = el finished más reciente.
   const primaryArchive = featured ? null : (archives[0] ?? (await getFinishedFallbackArchive()));
 
   const otherArchives = primaryArchive
@@ -86,13 +87,14 @@ export async function loadHomePageData(): Promise<HomePageData> {
   const featuredStats = featured ? (statsMap.get(featured.id) ?? null) : null;
   const primaryArchiveStats = primaryArchive ? (statsMap.get(primaryArchive.id) ?? null) : null;
 
-  const archiveStatsEntries =
-    featured && archives.length > 0
-      ? archives.map((tournament) => ({
-          tournament,
-          stats: statsMap.get(tournament.id) ?? { registered: 0, waitlist: 0, checkedIn: 0 },
-        }))
-      : [];
+  // Historial público: todos los torneos finalizados (más reciente primero).
+  const historyTournaments =
+    archives.length > 0 ? archives : primaryArchive ? [primaryArchive] : [];
+
+  const archiveStatsEntries = historyTournaments.map((tournament) => ({
+    tournament,
+    stats: statsMap.get(tournament.id) ?? { registered: 0, waitlist: 0, checkedIn: 0 },
+  }));
 
   const featuredSpotsInfo =
     featured && featuredStats ? buildFeaturedSpotsInfo(featured, featuredStats) : null;

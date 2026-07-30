@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AdminButton } from './AdminButton';
+import { AdminConfirmDialog } from './AdminConfirmDialog';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
 
 type AdminUser = { id: string; username: string; createdAt: string };
@@ -14,6 +15,7 @@ export function AdminUsersManager() {
   const [passwordUserId, setPasswordUserId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [actionError, setActionError] = useState('');
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
   const { run, isLoading } = useAsyncAction();
 
   async function load() {
@@ -73,15 +75,9 @@ export function AdminUsersManager() {
     });
   }
 
-  async function handleDelete(user: AdminUser) {
-    if (
-      !window.confirm(
-        `¿Eliminar al administrador "${user.username}"? Esta acción no se puede deshacer.`,
-      )
-    ) {
-      return;
-    }
-
+  async function confirmDelete() {
+    if (!userToDelete) return;
+    const user = userToDelete;
     clearMessages();
     await run(`delete:${user.id}`, async () => {
       const res = await fetch('/api/admin/users', {
@@ -92,9 +88,11 @@ export function AdminUsersManager() {
       const data = await res.json();
       if (!res.ok) {
         setActionError(data.error ?? 'Error al eliminar');
+        setUserToDelete(null);
         return;
       }
       setSuccess(`Usuario ${user.username} eliminado`);
+      setUserToDelete(null);
       if (passwordUserId === user.id) {
         setPasswordUserId(null);
         setNewPassword('');
@@ -150,7 +148,10 @@ export function AdminUsersManager() {
                       className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
                       disabled={isSelf}
                       loading={isLoading(`delete:${u.id}`)}
-                      onClick={() => handleDelete(u)}
+                      onClick={() => {
+                        clearMessages();
+                        setUserToDelete(u);
+                      }}
                       title={isSelf ? 'No puedes eliminar tu propia cuenta' : undefined}
                     >
                       Eliminar
@@ -219,6 +220,21 @@ export function AdminUsersManager() {
           Crear usuario
         </AdminButton>
       </form>
+
+      <AdminConfirmDialog
+        open={!!userToDelete}
+        title="Eliminar administrador"
+        description={
+          userToDelete
+            ? `¿Eliminar al administrador "${userToDelete.username}"? Esta acción no se puede deshacer.`
+            : ''
+        }
+        confirmLabel="Eliminar"
+        confirmVariant="danger"
+        loading={userToDelete ? isLoading(`delete:${userToDelete.id}`) : false}
+        onCancel={() => setUserToDelete(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

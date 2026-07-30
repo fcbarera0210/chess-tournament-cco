@@ -7,6 +7,10 @@ type Props = {
 const errorMessages: Record<string, string> = {
   MissingCSRF: 'La verificación de seguridad expiró. Intenta de nuevo.',
   CredentialsSignin: 'Usuario o contraseña incorrectos.',
+  Configuration: 'Error de configuración del servidor. Revisa AUTH_SECRET y la base de datos.',
+  AccessDenied: 'Acceso denegado.',
+  Verification: 'No se pudo verificar la sesión. Intenta de nuevo.',
+  Default: 'Error al iniciar sesión. Intenta de nuevo.',
 };
 
 export function AdminLoginForm({ authError }: Props) {
@@ -42,7 +46,9 @@ export function AdminLoginForm({ authError }: Props) {
     );
   }
 
-  const urlError = authError ? (errorMessages[authError] ?? 'Error al iniciar sesión.') : '';
+  const urlError = authError
+    ? (errorMessages[authError] ?? errorMessages.Default)
+    : '';
 
   return (
     <form method="post" action="/api/auth/callback/credentials" className="space-y-5">

@@ -25,26 +25,31 @@ export const authConfig: AuthConfig = {
         password: { label: 'Contraseña', type: 'password' },
       },
       async authorize(credentials) {
-        const username = credentials?.username?.toString().trim();
-        const password = credentials?.password?.toString();
+        try {
+          const username = credentials?.username?.toString().trim();
+          const password = credentials?.password?.toString();
 
-        if (!username || !password) return null;
+          if (!username || !password) return null;
 
-        const [user] = await db
-          .select()
-          .from(adminUsers)
-          .where(eq(adminUsers.username, username))
-          .limit(1);
+          const [user] = await db
+            .select()
+            .from(adminUsers)
+            .where(eq(adminUsers.username, username))
+            .limit(1);
 
-        if (!user) return null;
+          if (!user) return null;
 
-        const valid = await verifyPassword(password, user.passwordHash);
-        if (!valid) return null;
+          const valid = await verifyPassword(password, user.passwordHash);
+          if (!valid) return null;
 
-        return {
-          id: user.id,
-          name: user.username,
-        };
+          return {
+            id: user.id,
+            name: user.username,
+          };
+        } catch (error) {
+          console.error('Credentials authorize error:', error);
+          return null;
+        }
       },
     }),
   ],
@@ -53,6 +58,7 @@ export const authConfig: AuthConfig = {
   session: { strategy: 'jwt', maxAge: 60 * 60 * 24 * 7 },
   pages: {
     signIn: '/admin/login',
+    error: '/admin/login',
   },
   callbacks: {
     async jwt({ token, user }) {
