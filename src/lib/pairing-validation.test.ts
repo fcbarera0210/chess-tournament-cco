@@ -31,4 +31,24 @@ describe('pairing-validation', () => {
 
     expect(result.valid).toBe(false);
   });
+
+  it('rejects same-team pairings when team map is provided', () => {
+    const result = validatePairings(
+      [
+        { whitePlayerId: 'a', blackPlayerId: 'b', isBye: false },
+        { whitePlayerId: 'c', isBye: true },
+      ],
+      checkedIn,
+      {
+        teamByPlayerId: new Map([
+          ['a', 'alpha'],
+          ['b', 'alpha'],
+          ['c', 'beta'],
+        ]),
+      },
+    );
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toMatch(/mismo equipo/i);
+  });
 });

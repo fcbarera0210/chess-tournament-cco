@@ -7,6 +7,7 @@ export type PairingPlayer = {
   opponentIds: Set<string>;
   whiteGames: number;
   blackGames: number;
+  teamId?: string | null;
 };
 
 export type GeneratedPairing = {
@@ -37,6 +38,33 @@ function shuffle<T>(items: T[], random: () => number): T[] {
   return copy;
 }
 
+function areTeammates(a: PairingPlayer, b: PairingPlayer): boolean {
+  return Boolean(a.teamId && b.teamId && a.teamId === b.teamId);
+}
+
+function isEligiblePartner(
+  current: PairingPlayer,
+  candidate: PairingPlayer,
+  allowRematch: boolean,
+): boolean {
+  if (areTeammates(current, candidate)) return false;
+  if (!allowRematch && current.opponentIds.has(candidate.id)) return false;
+  return true;
+}
+
+function findPartnerIndex(
+  current: PairingPlayer,
+  candidates: PairingPlayer[],
+  allowRematch: boolean,
+): number {
+  const fresh = candidates.findIndex(
+    (candidate) => isEligiblePartner(current, candidate, false),
+  );
+  if (fresh !== -1) return fresh;
+  if (!allowRematch) return -1;
+  return candidates.findIndex((candidate) => isEligiblePartner(current, candidate, true));
+}
+
 function assignColors(a: PairingPlayer, b: PairingPlayer): { whiteId: string; blackId: string } {
   if (a.whiteGames !== b.whiteGames) {
     return a.whiteGames < b.whiteGames
@@ -60,13 +88,48 @@ function selectByePlayer(players: PairingPlayer[]): PairingPlayer | null {
   return [...players].sort(compareByeCandidate)[0] ?? null;
 }
 
-function pairRoundOne(players: PairingPlayer[], random: () => number): [PairingPlayer, PairingPlayer][] {
-  const shuffled = shuffle(players, random);
-  const pairs: [PairingPlayer, PairingPlayer][] = [];
-  for (let i = 0; i < shuffled.length; i += 2) {
-    pairs.push([shuffled[i], shuffled[i + 1]]);
+function pairRoundOne(
+  players: PairingPlayer[],
+  random: () => number,
+  warnings: string[],
+): [PairingPlayer, PairingPlayer][] {
+  const maxAttempts = 48;
+  let bestPairs: [PairingPlayer, PairingPlayer][] = [];
+  let bestUnpaired = players.length;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const remaining = shuffle(players, random);
+    const pairs: [PairingPlayer, PairingPlayer][] = [];
+    const unpaired: PairingPlayer[] = [];
+
+    while (remaining.length > 0) {
+      const current = remaining.shift()!;
+      const partnerIndex = findPartnerIndex(current, remaining, true);
+      if (partnerIndex === -1) {
+        unpaired.push(current);
+        continue;
+      }
+      const partner = remaining.splice(partnerIndex, 1)[0];
+      pairs.push([current, partner]);
+    }
+
+    if (unpaired.length < bestUnpaired) {
+      bestUnpaired = unpaired.length;
+      bestPairs = pairs;
+    }
+
+    if (unpaired.length === 0) {
+      return pairs;
+    }
   }
-  return pairs;
+
+  if (bestUnpaired > 0) {
+    warnings.push(
+      `${bestUnpaired} jugador(es) sin rival de otro equipo en ronda 1; revisa o ajusta equipos`,
+    );
+  }
+
+  return bestPairs;
 }
 
 function pairScoreGroups(players: PairingPlayer[], warnings: string[]): [PairingPlayer, PairingPlayer][] {
@@ -97,7 +160,7 @@ function pairScoreGroups(players: PairingPlayer[], warnings: string[]): [Pairing
       }
 
       const current = group.shift()!;
-      const partnerIndex = group.findIndex((candidate) => !current.opponentIds.has(candidate.id));
+      const partnerIndex = findPartnerIndex(current, group, false);
 
       if (partnerIndex === -1) {
         floaters.push(current);
@@ -111,19 +174,35 @@ function pairScoreGroups(players: PairingPlayer[], warnings: string[]): [Pairing
 
   if (floaters.length > 0) {
     while (floaters.length >= 2) {
-      const current = floaters.shift()!;
-      const partnerIndex = floaters.findIndex((candidate) => !current.opponentIds.has(candidate.id));
+      // Emparejar primero a quien tiene menos rivales válidos.
+      let hardestIdx = 0;
+      let hardestCount = Infinity;
+      for (let i = 0; i < floaters.length; i += 1) {
+        const count = floaters.filter(
+          (candidate, j) => j !== i && isEligiblePartner(floaters[i], candidate, true),
+        ).length;
+        if (count < hardestCount) {
+          hardestCount = count;
+          hardestIdx = i;
+        }
+      }
+
+      const current = floaters.splice(hardestIdx, 1)[0];
+      const partnerIndex = findPartnerIndex(current, floaters, true);
 
       if (partnerIndex === -1) {
         warnings.push(
-          `Rematch forzado: ${current.name} vs ${floaters[0].name} (sin pareja alternativa)`,
+          `${current.name} no tiene rival de otro equipo disponible; revisa manualmente`,
         );
-        const partner = floaters.shift()!;
-        pairs.push([current, partner]);
         continue;
       }
 
       const partner = floaters.splice(partnerIndex, 1)[0];
+      if (current.opponentIds.has(partner.id)) {
+        warnings.push(
+          `Rematch forzado: ${current.name} vs ${partner.name} (sin pareja alternativa)`,
+        );
+      }
       pairs.push([current, partner]);
     }
 
@@ -166,9 +245,17 @@ export function generateSwissPairings(
   }
 
   const matchedPairs =
-    roundNumber === 1 ? pairRoundOne(pool, random) : pairScoreGroups(pool, warnings);
+    roundNumber === 1
+      ? pairRoundOne(pool, random, warnings)
+      : pairScoreGroups(pool, warnings);
+
+  const byId = new Map(players.map((p) => [p.id, p]));
 
   for (const [a, b] of matchedPairs) {
+    if (areTeammates(a, b)) {
+      warnings.push(`Se evitó un pareo inválido entre compañeros: ${a.name} vs ${b.name}`);
+      continue;
+    }
     const { whiteId, blackId } = assignColors(a, b);
     pairings.push({
       boardNumber: 0,
@@ -182,6 +269,16 @@ export function generateSwissPairings(
   for (const pairing of pairings) {
     pairedIds.add(pairing.whitePlayerId);
     if (pairing.blackPlayerId) pairedIds.add(pairing.blackPlayerId);
+
+    if (pairing.blackPlayerId) {
+      const white = byId.get(pairing.whitePlayerId);
+      const black = byId.get(pairing.blackPlayerId);
+      if (white && black && areTeammates(white, black)) {
+        warnings.push(
+          `Pareo entre compañeros detectado: ${white.name} vs ${black.name}`,
+        );
+      }
+    }
   }
 
   if (pairedIds.size !== players.length) {

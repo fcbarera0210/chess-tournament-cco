@@ -63,4 +63,40 @@ describe('swiss-pairing', () => {
     expect(boards).toContain('1-3');
     expect(boards).toContain('2-4');
   });
+
+  it('never pairs teammates against each other', () => {
+    const players = [
+      player('1', { teamId: 'alpha' }),
+      player('2', { teamId: 'alpha' }),
+      player('3', { teamId: 'beta' }),
+      player('4', { teamId: 'beta' }),
+    ];
+
+    const result = generateSwissPairings(players, 1, () => 0.33);
+    const boards = result.pairings.filter((p) => !p.isBye);
+
+    expect(boards).toHaveLength(2);
+    for (const board of boards) {
+      const ids = [board.whitePlayerId, board.blackPlayerId!].sort();
+      expect(ids.join('-')).not.toBe('1-2');
+      expect(ids.join('-')).not.toBe('3-4');
+    }
+  });
+
+  it('avoids teammate rematch preference in later rounds', () => {
+    const players = [
+      player('1', { points: 1, teamId: 'alpha', opponentIds: new Set(['3']) }),
+      player('2', { points: 1, teamId: 'alpha', opponentIds: new Set(['4']) }),
+      player('3', { points: 1, teamId: 'beta', opponentIds: new Set(['1']) }),
+      player('4', { points: 1, teamId: 'beta', opponentIds: new Set(['2']) }),
+    ];
+
+    const result = generateSwissPairings(players, 2, () => 0.2);
+    const boards = result.pairings
+      .filter((p) => !p.isBye)
+      .map((p) => [p.whitePlayerId, p.blackPlayerId].sort().join('-'));
+
+    expect(boards).toContain('1-4');
+    expect(boards).toContain('2-3');
+  });
 });

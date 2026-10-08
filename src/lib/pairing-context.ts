@@ -63,6 +63,7 @@ export async function buildPairingContext(tournamentId: string, roundNumber: num
       opponentIds,
       whiteGames,
       blackGames,
+      teamId: player.teamId,
     };
   });
 

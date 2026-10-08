@@ -4,9 +4,15 @@ export type PairingInput = {
   isBye?: boolean;
 };
 
+export type ValidatePairingsOptions = {
+  /** playerId → teamId; si ambos tienen el mismo teamId, el pareo se rechaza */
+  teamByPlayerId?: Map<string, string | null | undefined>;
+};
+
 export function validatePairings(
   pairings: PairingInput[],
   checkedInIds: string[],
+  options: ValidatePairingsOptions = {},
 ): { valid: boolean; error?: string } {
   if (checkedInIds.length < 2) {
     return { valid: false, error: 'Se necesitan al menos 2 jugadores con check-in' };
@@ -15,6 +21,7 @@ export function validatePairings(
   const checkedInSet = new Set(checkedInIds);
   const assigned = new Map<string, number>();
   let byeCount = 0;
+  const teamByPlayerId = options.teamByPlayerId;
 
   for (const pairing of pairings) {
     const isBye = pairing.isBye === true;
@@ -41,6 +48,17 @@ export function validatePairings(
     }
     if (!checkedInSet.has(whiteId) || !checkedInSet.has(blackId)) {
       return { valid: false, error: 'Hay jugadores que no tienen check-in' };
+    }
+
+    if (teamByPlayerId) {
+      const whiteTeam = teamByPlayerId.get(whiteId);
+      const blackTeam = teamByPlayerId.get(blackId);
+      if (whiteTeam && blackTeam && whiteTeam === blackTeam) {
+        return {
+          valid: false,
+          error: 'En torneos por equipos no se pueden enfrentar jugadores del mismo equipo',
+        };
+      }
     }
 
     assigned.set(whiteId, (assigned.get(whiteId) ?? 0) + 1);

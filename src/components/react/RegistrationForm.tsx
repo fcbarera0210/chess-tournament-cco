@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { publicApiUrl } from '../../lib/admin-api';
+import { AdminPillGroup } from './AdminPillGroup';
 
 type TeamOption = { id: string; name: string };
 
@@ -38,6 +39,10 @@ export function RegistrationForm({ slug, eventDate, venue, isTeamTournament = fa
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    if (isTeamTournament && !teamId) {
+      setError('Elige tu equipo para completar la inscripción.');
+      return;
+    }
     setLoading(true);
 
     try {
@@ -147,24 +152,21 @@ export function RegistrationForm({ slug, eventDate, venue, isTeamTournament = fa
 
       {isTeamTournament && (
         <div>
-          <label className="mb-1 block text-sm font-medium text-muted" htmlFor="team">
-            Equipo
-          </label>
-          <select
-            id="team"
-            required
-            value={teamId}
-            onChange={(e) => setTeamId(e.target.value)}
-            className="input-minimal"
-            disabled={teamsLoading || !teamsReady}
-          >
-            <option value="">{teamsLoading ? 'Cargando equipos...' : 'Selecciona tu equipo'}</option>
-            {teams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
-            ))}
-          </select>
+          <span className="mb-2 block text-sm font-medium text-muted">Elige tu equipo</span>
+          {teamsLoading ? (
+            <p className="text-sm text-muted">Cargando equipos...</p>
+          ) : (
+            <AdminPillGroup
+              label="Equipo"
+              value={teamId}
+              disabled={!teamsReady}
+              onChange={(value) => {
+                setTeamId(value);
+                setError('');
+              }}
+              options={teams.map((team) => ({ value: team.id, label: team.name }))}
+            />
+          )}
         </div>
       )}
 

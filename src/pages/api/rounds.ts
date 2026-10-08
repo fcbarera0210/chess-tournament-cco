@@ -5,7 +5,7 @@ import { rounds, games, players, tournaments } from '../../lib/db/schema';
 import { getGamesForRound, isTournamentLocked } from '../../lib/tournament';
 import { requireAdminTournament } from '../../lib/admin-tournament-context';
 import { withAdmin } from '../../lib/session';
-import { buildPairingContext, getCheckedInPlayerIds } from '../../lib/pairing-context';
+import { buildPairingContext } from '../../lib/pairing-context';
 import { validatePairings } from '../../lib/pairing-validation';
 import { generateSwissPairings } from '../../lib/swiss-pairing';
 
@@ -150,8 +150,16 @@ export const POST: APIRoute = async ({ request }) =>
         return new Response(JSON.stringify({ error: 'Ronda no editable' }), { status: 400 });
       }
 
-      const checkedInIds = await getCheckedInPlayerIds(tournament.id);
-      const validation = validatePairings(pairings, checkedInIds);
+      const checkedIn = await db
+        .select({ id: players.id, teamId: players.teamId })
+        .from(players)
+        .where(and(eq(players.tournamentId, tournament.id), eq(players.status, 'checked_in')));
+      const checkedInIds = checkedIn.map((p) => p.id);
+      const validation = validatePairings(pairings, checkedInIds, {
+        teamByPlayerId: tournament.isTeamTournament
+          ? new Map(checkedIn.map((p) => [p.id, p.teamId]))
+          : undefined,
+      });
       if (!validation.valid) {
         return new Response(JSON.stringify({ error: validation.error }), { status: 400 });
       }

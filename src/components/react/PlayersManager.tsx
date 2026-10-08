@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AdminButton } from './AdminButton';
+import { AdminPillGroup } from './AdminPillGroup';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
 import { useAdminTournament } from '../../hooks/useAdminTournament';
 import { adminApiUrl } from '../../lib/admin-api';
@@ -15,7 +16,7 @@ type Player = {
   teamName: string | null;
 };
 
-type TeamOption = { id: string; name: string };
+type TeamOption = { id: string; name: string; memberCount: number };
 
 export function PlayersManager() {
   const { tournamentId, tournament } = useAdminTournament();
@@ -32,6 +33,7 @@ export function PlayersManager() {
   const [formError, setFormError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [teamEditingId, setTeamEditingId] = useState<string | null>(null);
   const { run, isLoading } = useAsyncAction();
 
   const isFinished = tournament?.status === 'finished';
@@ -46,7 +48,13 @@ export function PlayersManager() {
     const teamsData = await teamsRes.json();
     setPlayers(playersData.players ?? []);
     setIsTeamTournament(Boolean(playersData.isTeamTournament ?? teamsData.isTeamTournament));
-    setTeams((teamsData.teams ?? []).map((t: TeamOption) => ({ id: t.id, name: t.name })));
+    setTeams(
+      (teamsData.teams ?? []).map((t: TeamOption) => ({
+        id: t.id,
+        name: t.name,
+        memberCount: t.memberCount ?? 0,
+      })),
+    );
     setLoading(false);
   }
 
@@ -59,6 +67,10 @@ export function PlayersManager() {
     if (!tournamentId) return;
 
     setFormError('');
+    if (isTeamTournament && !teamId) {
+      setFormError('Elige el equipo del jugador');
+      return;
+    }
     await run('register', async () => {
       const res = await fetch(adminApiUrl('/api/players', tournamentId), {
         method: 'POST',
@@ -244,22 +256,27 @@ export function PlayersManager() {
               />
             </label>
             {isTeamTournament && (
-              <label className="block sm:col-span-2">
+              <div className="sm:col-span-2">
                 <span className="text-sm font-medium">Equipo</span>
-                <select
-                  required
-                  value={teamId}
-                  onChange={(e) => setTeamId(e.target.value)}
-                  className="admin-input mt-1 w-full"
-                >
-                  <option value="">Selecciona un equipo</option>
-                  {teams.map((team) => (
-                    <option key={team.id} value={team.id}>
-                      {team.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                {teams.length === 0 ? (
+                  <p className="mt-1 text-sm text-muted">Aún no hay equipos creados.</p>
+                ) : (
+                  <AdminPillGroup
+                    label="Equipo del jugador"
+                    className="mt-2"
+                    value={teamId}
+                    onChange={(value) => {
+                      setTeamId(value);
+                      setFormError('');
+                    }}
+                    options={teams.map((team) => ({
+                      value: team.id,
+                      label: team.name,
+                      meta: team.memberCount,
+                    }))}
+                  />
+                )}
+              </div>
             )}
             <div className="sm:col-span-2">
               <AdminButton
@@ -379,22 +396,40 @@ export function PlayersManager() {
                   Editar nombre
                 </AdminButton>
                 {isTeamTournament && !isFinished && teams.length > 0 && (
-                  <select
-                    className="admin-input max-w-[14rem] py-2 text-sm"
-                    value={p.teamId ?? ''}
-                    disabled={isLoading(`team:${p.id}`)}
-                    onChange={(e) => updatePlayerTeam(p.id, e.target.value)}
+                  <AdminButton
+                    variant="secondary"
+                    className="px-3 py-2 text-sm"
+                    aria-expanded={teamEditingId === p.id}
+                    onClick={() => setTeamEditingId(teamEditingId === p.id ? null : p.id)}
                   >
-                    <option value="" disabled>
-                      Asignar equipo
-                    </option>
-                    {teams.map((team) => (
-                      <option key={team.id} value={team.id}>
-                        {team.name}
-                      </option>
-                    ))}
-                  </select>
+                    {p.teamId ? 'Cambiar equipo' : 'Asignar equipo'}
+                  </AdminButton>
                 )}
+              </div>
+            )}
+            {teamEditingId === p.id && !isEditingName && (
+              <div className="mt-3 rounded-xl border border-border bg-bg p-3">
+                <p className="mb-2 text-xs font-medium text-muted">
+                  {isLoading(`team:${p.id}`) ? 'Guardando...' : `Equipo de ${p.name}`}
+                </p>
+                <AdminPillGroup
+                  label={`Equipo de ${p.name}`}
+                  value={p.teamId ?? ''}
+                  disabled={isLoading(`team:${p.id}`)}
+                  onChange={async (value) => {
+                    if (value === p.teamId) {
+                      setTeamEditingId(null);
+                      return;
+                    }
+                    await updatePlayerTeam(p.id, value);
+                    setTeamEditingId(null);
+                  }}
+                  options={teams.map((team) => ({
+                    value: team.id,
+                    label: team.name,
+                    meta: team.memberCount,
+                  }))}
+                />
               </div>
             )}
             {!isFinished && (
