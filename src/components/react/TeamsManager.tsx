@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AdminButton } from './AdminButton';
+import { AdminConfirmDialog } from './AdminConfirmDialog';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
 import { useAdminTournament } from '../../hooks/useAdminTournament';
 import { adminApiUrl } from '../../lib/admin-api';
@@ -21,6 +22,7 @@ export function TeamsManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [formError, setFormError] = useState('');
+  const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
   const { run, isLoading } = useAsyncAction();
 
   const isFinished = tournament?.status === 'finished';
@@ -86,9 +88,8 @@ export function TeamsManager() {
     });
   }
 
-  async function deleteTeam(teamId: string, teamName: string) {
+  async function deleteTeam(teamId: string) {
     if (!tournamentId) return;
-    if (!confirm(`¿Eliminar el equipo "${teamName}"? Los jugadores quedarán sin equipo.`)) return;
 
     await run(`delete:${teamId}`, async () => {
       const res = await fetch(adminApiUrl('/api/teams', tournamentId), {
@@ -99,9 +100,11 @@ export function TeamsManager() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         showAdminToast(data.error ?? 'Error al eliminar', 'error');
+        setTeamToDelete(null);
         return;
       }
       showAdminToast('Equipo eliminado', 'success');
+      setTeamToDelete(null);
       await load();
     });
   }
@@ -235,7 +238,7 @@ export function TeamsManager() {
                       variant="ghost"
                       className="px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                       loading={isLoading(`delete:${team.id}`)}
-                      onClick={() => deleteTeam(team.id, team.name)}
+                      onClick={() => setTeamToDelete(team)}
                     >
                       Eliminar
                     </AdminButton>
@@ -246,6 +249,25 @@ export function TeamsManager() {
           );
         })}
       </div>
+
+      <AdminConfirmDialog
+        open={!!teamToDelete}
+        title="Eliminar equipo"
+        description={
+          teamToDelete
+            ? `¿Eliminar el equipo "${teamToDelete.name}"? ${
+                teamToDelete.memberCount > 0
+                  ? `Sus ${teamToDelete.memberCount} jugador${teamToDelete.memberCount === 1 ? '' : 'es'} quedarán sin equipo.`
+                  : 'No tiene jugadores asignados.'
+              }`
+            : ''
+        }
+        confirmLabel="Eliminar"
+        confirmVariant="danger"
+        loading={teamToDelete ? isLoading(`delete:${teamToDelete.id}`) : false}
+        onCancel={() => setTeamToDelete(null)}
+        onConfirm={() => teamToDelete && deleteTeam(teamToDelete.id)}
+      />
     </div>
   );
 }

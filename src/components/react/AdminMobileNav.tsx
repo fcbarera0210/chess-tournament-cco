@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { AdminTournamentSelector } from './AdminTournamentSelector';
 
 const links = [
   { href: '/admin', label: 'Dashboard' },
@@ -92,8 +93,11 @@ export function AdminMobileNav({ pathname }: AdminMobileNavProps) {
       {open && (
         <div
           id="admin-mobile-nav-menu"
-          className="mobile-nav-menu absolute top-[calc(100%+0.5rem)] right-0 z-50 min-w-[12rem] overflow-hidden rounded-2xl border border-white/10 bg-[var(--color-dark)] py-2 shadow-lg"
+          className="mobile-nav-menu absolute top-[calc(100%+0.5rem)] right-0 z-50 min-w-[16rem] overflow-hidden rounded-2xl border border-white/10 bg-[var(--color-dark)] py-2 shadow-lg"
         >
+          <div className="mb-1 border-b border-white/10 px-3 pt-1 pb-3">
+            <AdminTournamentSelector stacked />
+          </div>
           {links.map((link) => {
             const active = isActive(pathname, link.href);
             return (

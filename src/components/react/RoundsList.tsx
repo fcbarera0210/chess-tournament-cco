@@ -3,6 +3,7 @@ import { AdminButton } from './AdminButton';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
 import { useAdminTournament } from '../../hooks/useAdminTournament';
 import { adminApiUrl } from '../../lib/admin-api';
+import { showAdminToast } from '../../lib/admin-toast';
 
 type Round = {
   id: string;
@@ -11,7 +12,7 @@ type Round = {
 };
 
 export function RoundsList() {
-  const { tournamentId } = useAdminTournament();
+  const { tournamentId, tournament } = useAdminTournament();
   const [rounds, setRounds] = useState<Round[]>([]);
   const { run, isLoading } = useAsyncAction();
 
@@ -30,12 +31,21 @@ export function RoundsList() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'create_round' }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         window.location.href = `/admin/rondas/${data.round.roundNumber}`;
+        return;
       }
+      showAdminToast(data.error ?? 'No se pudo crear la ronda', 'error');
     });
   }
+
+  const isFinished = tournament?.status === 'finished';
+  const lastRound = rounds.reduce<Round | null>(
+    (latest, r) => (!latest || r.roundNumber > latest.roundNumber ? r : latest),
+    null,
+  );
+  const blockedByOpenRound = lastRound !== null && lastRound.status !== 'completed';
 
   const statusLabel: Record<string, string> = {
     draft: 'Borrador',
@@ -51,9 +61,27 @@ export function RoundsList() {
 
   return (
     <div className="space-y-4">
-      <AdminButton className="px-5 py-3" loading={isLoading('create')} onClick={createRound}>
-        + Nueva ronda
-      </AdminButton>
+      {!isFinished && (
+        <div className="flex flex-wrap items-center gap-3">
+          <AdminButton
+            className="px-5 py-3"
+            loading={isLoading('create')}
+            disabled={blockedByOpenRound}
+            onClick={createRound}
+          >
+            + Nueva ronda
+          </AdminButton>
+          {blockedByOpenRound && lastRound && (
+            <p className="text-sm text-muted">
+              Cierra la{' '}
+              <a href={`/admin/rondas/${lastRound.roundNumber}`} className="font-medium text-ink underline">
+                ronda {lastRound.roundNumber}
+              </a>{' '}
+              para crear la siguiente.
+            </p>
+          )}
+        </div>
+      )}
       <div className="space-y-2">
         {rounds.map((r) => (
           <a
@@ -70,7 +98,13 @@ export function RoundsList() {
           </a>
         ))}
         {rounds.length === 0 && (
-          <p className="text-muted">No hay rondas. Inicia el torneo desde Configuración.</p>
+          <p className="text-muted">
+            Aún no hay rondas. Haz check-in de los jugadores en{' '}
+            <a href="/admin/jugadores" className="font-medium text-ink underline">
+              Jugadores
+            </a>{' '}
+            y crea la primera ronda: el torneo pasará a “En juego”.
+          </p>
         )}
       </div>
     </div>

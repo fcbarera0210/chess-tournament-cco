@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AdminButton } from './AdminButton';
+import { AdminConfirmDialog } from './AdminConfirmDialog';
 import { AdminPillGroup } from './AdminPillGroup';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
 import { useAdminTournament } from '../../hooks/useAdminTournament';
@@ -34,6 +35,7 @@ export function PlayersManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [teamEditingId, setTeamEditingId] = useState<string | null>(null);
+  const [playerToWithdraw, setPlayerToWithdraw] = useState<Player | null>(null);
   const { run, isLoading } = useAsyncAction();
 
   const isFinished = tournament?.status === 'finished';
@@ -468,7 +470,7 @@ export function PlayersManager() {
                     variant="ghost"
                     className="px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                     loading={isLoading(`status:${p.id}:withdrawn`)}
-                    onClick={() => updateStatus(p.id, 'withdrawn')}
+                    onClick={() => setPlayerToWithdraw(p)}
                   >
                     Retirar
                   </AdminButton>
@@ -479,6 +481,25 @@ export function PlayersManager() {
           );
         })}
       </div>
+
+      <AdminConfirmDialog
+        open={!!playerToWithdraw}
+        title="Retirar jugador"
+        description={
+          playerToWithdraw
+            ? `¿Retirar a ${playerToWithdraw.name} del torneo? No será considerado en los próximos pareos y no se puede revertir desde el panel.`
+            : ''
+        }
+        confirmLabel="Retirar"
+        confirmVariant="danger"
+        loading={playerToWithdraw ? isLoading(`status:${playerToWithdraw.id}:withdrawn`) : false}
+        onCancel={() => setPlayerToWithdraw(null)}
+        onConfirm={async () => {
+          if (!playerToWithdraw) return;
+          await updateStatus(playerToWithdraw.id, 'withdrawn');
+          setPlayerToWithdraw(null);
+        }}
+      />
     </div>
   );
 }

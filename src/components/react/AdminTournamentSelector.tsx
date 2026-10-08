@@ -16,7 +16,7 @@ const statusLabel: Record<string, string> = {
   finished: 'Finalizado',
 };
 
-export function AdminTournamentSelector() {
+export function AdminTournamentSelector({ stacked = false }: { stacked?: boolean }) {
   const { tournamentId, tournament, loading, selectTournament } = useAdminTournament();
   const [options, setOptions] = useState<TournamentOption[]>([]);
 
@@ -40,12 +40,18 @@ export function AdminTournamentSelector() {
   }
 
   return (
-    <label className="flex items-center gap-2 text-sm text-white/80">
-      <span className="hidden md:inline">Torneo:</span>
+    <label
+      className={
+        stacked
+          ? 'flex flex-col gap-1 text-xs text-white/60'
+          : 'flex items-center gap-2 text-sm text-white/80'
+      }
+    >
+      <span className={stacked ? '' : 'hidden md:inline'}>Torneo{stacked ? ' activo' : ':'}</span>
       <select
         value={tournamentId ?? ''}
         onChange={(e) => selectTournament(e.target.value)}
-        className="max-w-[12rem] truncate rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-sm text-white outline-none focus:border-white/40"
+        className={`${stacked ? 'w-full' : 'max-w-[12rem]'} truncate rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-sm text-white outline-none focus:border-white/40`}
         aria-label="Seleccionar torneo activo"
       >
         {options.map((t) => (

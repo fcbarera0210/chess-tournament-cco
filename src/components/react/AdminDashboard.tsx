@@ -6,7 +6,7 @@ import { getTournamentPublicLinks } from '../../lib/tournament-public-links';
 export function AdminDashboard() {
   const { tournamentId, tournament: ctxTournament } = useAdminTournament();
   const [data, setData] = useState<{
-    tournament: { name: string; status: string; slug: string };
+    tournament: { name: string; status: string; slug: string; isTeamTournament: boolean };
     stats: { registered: number; waitlist: number; checkedIn: number };
   } | null>(null);
   const [round, setRound] = useState<{ roundNumber: number; pendingGames: number } | null>(null);
@@ -34,6 +34,7 @@ export function AdminDashboard() {
   if (!data) return <p className="text-muted">Cargando...</p>;
 
   const statusLabel: Record<string, string> = {
+    draft: 'Borrador',
     registration_open: 'Inscripciones abiertas',
     registration_closed: 'Inscripciones cerradas',
     live: 'En juego',
@@ -76,7 +77,9 @@ export function AdminDashboard() {
       <div className="grid gap-3 sm:grid-cols-2">
         {[
           { href: '/admin/jugadores', label: 'Gestionar jugadores' },
-          { href: '/admin/equipos', label: 'Gestionar equipos' },
+          ...(data.tournament.isTeamTournament
+            ? [{ href: '/admin/equipos', label: 'Gestionar equipos' }]
+            : []),
           { href: '/admin/rondas', label: 'Ver rondas' },
           { href: '/admin/galeria', label: 'Galería de fotos' },
           { href: '/admin/torneo', label: 'Configuración y export' },
