@@ -25,6 +25,7 @@ function baseTournament(overrides: Partial<TournamentRow> = {}): TournamentRow {
     waitlistEnabled: false,
     showOnHome: true,
     publicRegistration: true,
+    isTeamTournament: false,
     createdAt: new Date(),
     ...overrides,
   };
@@ -53,5 +54,32 @@ describe('buildTournamentUpdates', () => {
     );
 
     expect(error).toMatch(/inscripción pública/i);
+  });
+
+  it('rechaza torneo por equipos en formato knockout', () => {
+    const { error } = buildTournamentUpdates(
+      { isTeamTournament: true },
+      baseTournament({
+        status: 'registration_open',
+        format: 'knockout',
+        isTeamTournament: false,
+      }),
+    );
+
+    expect(error).toMatch(/suizo/i);
+  });
+
+  it('permite activar torneo por equipos en suizo', () => {
+    const { updates, error } = buildTournamentUpdates(
+      { isTeamTournament: true },
+      baseTournament({
+        status: 'registration_open',
+        format: 'swiss',
+        isTeamTournament: false,
+      }),
+    );
+
+    expect(error).toBeUndefined();
+    expect(updates.isTeamTournament).toBe(true);
   });
 });

@@ -76,6 +76,7 @@ export function AdminDashboard() {
       <div className="grid gap-3 sm:grid-cols-2">
         {[
           { href: '/admin/jugadores', label: 'Gestionar jugadores' },
+          { href: '/admin/equipos', label: 'Gestionar equipos' },
           { href: '/admin/rondas', label: 'Ver rondas' },
           { href: '/admin/galeria', label: 'Galería de fotos' },
           { href: '/admin/torneo', label: 'Configuración y export' },

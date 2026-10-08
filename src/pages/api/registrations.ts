@@ -6,6 +6,12 @@ import { getTournamentBySlug, getRegistrationStats, isRegistrationOpen } from '.
 import { checkRateLimit } from '../../lib/rate-limit';
 import { invalidatePublicTournamentCache } from '../../lib/cache-invalidation';
 import { publicApiCacheHeaders } from '../../lib/public-cache';
+import {
+  countTeamsByTournament,
+  getTeamInTournament,
+  listTeamsByTournament,
+  validateTeamTournamentReady,
+} from '../../lib/teams';
 
 export const prerender = false;
 
@@ -36,6 +42,7 @@ export const POST: APIRoute = async ({ request, clientAddress, url, cache }) => 
     name?: string;
     contact?: string;
     clubLevel?: string;
+    teamId?: string;
     confirmed?: boolean;
   };
 
@@ -51,6 +58,7 @@ export const POST: APIRoute = async ({ request, clientAddress, url, cache }) => 
   const name = body.name?.trim();
   const contact = body.contact?.trim();
   const clubLevel = body.clubLevel?.trim() || null;
+  const teamId = typeof body.teamId === 'string' ? body.teamId.trim() : '';
 
   if (!name || name.length < 2) {
     return new Response(JSON.stringify({ error: 'Nombre requerido' }), {
@@ -71,6 +79,34 @@ export const POST: APIRoute = async ({ request, clientAddress, url, cache }) => 
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  let resolvedTeamId: string | null = null;
+  if (tournament.isTeamTournament) {
+    const teamCount = await countTeamsByTournament(tournament.id);
+    const teamReadyError = validateTeamTournamentReady(teamCount);
+    if (teamReadyError) {
+      return new Response(JSON.stringify({ error: teamReadyError }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!teamId) {
+      return new Response(JSON.stringify({ error: 'Debes elegir un equipo' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const team = await getTeamInTournament(teamId, tournament.id);
+    if (!team) {
+      return new Response(JSON.stringify({ error: 'Equipo no válido' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    resolvedTeamId = team.id;
   }
 
   const stats = await getRegistrationStats(tournament.id);
@@ -96,6 +132,7 @@ export const POST: APIRoute = async ({ request, clientAddress, url, cache }) => 
       name,
       contact,
       clubLevel,
+      teamId: resolvedTeamId,
       status,
     })
     .returning();
@@ -124,6 +161,9 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   const stats = await getRegistrationStats(tournament.id);
+  const teamList = tournament.isTeamTournament
+    ? await listTeamsByTournament(tournament.id)
+    : [];
 
   return new Response(
     JSON.stringify({
@@ -135,7 +175,9 @@ export const GET: APIRoute = async ({ url }) => {
         venue: tournament.venue,
         status: tournament.status,
         maxPlayers: tournament.maxPlayers,
+        isTeamTournament: tournament.isTeamTournament,
       },
+      teams: teamList.map((team) => ({ id: team.id, name: team.name })),
       stats,
       spotsRemaining: Math.max(0, tournament.maxPlayers - stats.registered),
       registrationOpen: isRegistrationOpen(tournament, stats.registered),

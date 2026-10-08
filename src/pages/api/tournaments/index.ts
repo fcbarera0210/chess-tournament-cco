@@ -70,7 +70,12 @@ export const POST: APIRoute = async ({ request }) =>
           typeof body.venueMapsUrl === 'string' && body.venueMapsUrl.trim()
             ? body.venueMapsUrl.trim()
             : null,
-        format: body.format === 'knockout' ? 'knockout' : 'swiss',
+        format:
+          body.isTeamTournament === true
+            ? 'swiss'
+            : body.format === 'knockout'
+              ? 'knockout'
+              : 'swiss',
         maxPlayers: typeof body.maxPlayers === 'number' ? body.maxPlayers : 20,
         plannedRounds: typeof body.plannedRounds === 'number' ? body.plannedRounds : 4,
         timeControl: (body.timeControl as string) ?? '10+5',
@@ -80,6 +85,7 @@ export const POST: APIRoute = async ({ request }) =>
         waitlistEnabled: body.waitlistEnabled !== false,
         showOnHome,
         publicRegistration,
+        isTeamTournament: body.isTeamTournament === true,
       })
       .returning();
 

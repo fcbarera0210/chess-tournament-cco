@@ -11,17 +11,24 @@ type Player = {
   contact: string;
   clubLevel: string | null;
   status: string;
+  teamId: string | null;
+  teamName: string | null;
 };
+
+type TeamOption = { id: string; name: string };
 
 export function PlayersManager() {
   const { tournamentId, tournament } = useAdminTournament();
   const [players, setPlayers] = useState<Player[]>([]);
+  const [teams, setTeams] = useState<TeamOption[]>([]);
+  const [isTeamTournament, setIsTeamTournament] = useState(false);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [clubLevel, setClubLevel] = useState('');
+  const [teamId, setTeamId] = useState('');
   const [formError, setFormError] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -31,9 +38,15 @@ export function PlayersManager() {
 
   async function load() {
     if (!tournamentId) return;
-    const res = await fetch(adminApiUrl('/api/players', tournamentId));
-    const data = await res.json();
-    setPlayers(data.players ?? []);
+    const [playersRes, teamsRes] = await Promise.all([
+      fetch(adminApiUrl('/api/players', tournamentId)),
+      fetch(adminApiUrl('/api/teams', tournamentId)),
+    ]);
+    const playersData = await playersRes.json();
+    const teamsData = await teamsRes.json();
+    setPlayers(playersData.players ?? []);
+    setIsTeamTournament(Boolean(playersData.isTeamTournament ?? teamsData.isTeamTournament));
+    setTeams((teamsData.teams ?? []).map((t: TeamOption) => ({ id: t.id, name: t.name })));
     setLoading(false);
   }
 
@@ -50,7 +63,12 @@ export function PlayersManager() {
       const res = await fetch(adminApiUrl('/api/players', tournamentId), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, contact, clubLevel }),
+        body: JSON.stringify({
+          name,
+          contact,
+          clubLevel,
+          ...(isTeamTournament ? { teamId } : {}),
+        }),
       });
       const data = await res.json();
 
@@ -62,6 +80,7 @@ export function PlayersManager() {
       setName('');
       setContact('');
       setClubLevel('');
+      setTeamId('');
       showAdminToast(`${data.player.name} inscrito con check-in`, 'success');
       await load();
     });
@@ -129,6 +148,24 @@ export function PlayersManager() {
     });
   }
 
+  async function updatePlayerTeam(playerId: string, nextTeamId: string) {
+    if (!tournamentId || !nextTeamId) return;
+    await run(`team:${playerId}`, async () => {
+      const res = await fetch(adminApiUrl('/api/players', tournamentId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId, teamId: nextTeamId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showAdminToast(data.error ?? 'Error al asignar equipo', 'error');
+        return;
+      }
+      showAdminToast('Equipo actualizado', 'success');
+      await load();
+    });
+  }
+
   const filtered = players.filter((p) => {
     if (filter !== 'all' && p.status !== filter) return false;
     if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -154,6 +191,16 @@ export function PlayersManager() {
           <p className="mt-1 text-sm text-muted">
             Los jugadores añadidos desde aquí quedan con check-in listo para los pareos.
           </p>
+
+          {isTeamTournament && teams.length < 2 && (
+            <p className="mt-3 rounded-lg border border-pending/30 bg-pending/10 px-4 py-3 text-sm text-pending">
+              Crea al menos 2 equipos en{' '}
+              <a href="/admin/equipos" className="underline">
+                Equipos
+              </a>{' '}
+              antes de inscribir.
+            </p>
+          )}
 
           {formError && (
             <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -196,8 +243,30 @@ export function PlayersManager() {
                 placeholder="Ej. principiante, club local"
               />
             </label>
+            {isTeamTournament && (
+              <label className="block sm:col-span-2">
+                <span className="text-sm font-medium">Equipo</span>
+                <select
+                  required
+                  value={teamId}
+                  onChange={(e) => setTeamId(e.target.value)}
+                  className="admin-input mt-1 w-full"
+                >
+                  <option value="">Selecciona un equipo</option>
+                  {teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <div className="sm:col-span-2">
-              <AdminButton type="submit" loading={isLoading('register')}>
+              <AdminButton
+                type="submit"
+                loading={isLoading('register')}
+                disabled={isTeamTournament && teams.length === 0}
+              >
                 Inscribir con check-in
               </AdminButton>
             </div>
@@ -288,6 +357,11 @@ export function PlayersManager() {
                     <p className="font-semibold">{p.name}</p>
                     {p.contact !== '—' && <p className="text-sm text-muted">{p.contact}</p>}
                     {p.clubLevel && <p className="text-xs text-muted">{p.clubLevel}</p>}
+                    {isTeamTournament && (
+                      <p className="text-xs text-muted">
+                        Equipo: {p.teamName ?? 'Sin equipo'}
+                      </p>
+                    )}
                   </>
                 )}
               </div>
@@ -296,7 +370,7 @@ export function PlayersManager() {
               </span>
             </div>
             {!isEditingName && (
-              <div className="mt-3">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <AdminButton
                   variant="secondary"
                   className="px-3 py-2 text-sm"
@@ -304,6 +378,23 @@ export function PlayersManager() {
                 >
                   Editar nombre
                 </AdminButton>
+                {isTeamTournament && !isFinished && teams.length > 0 && (
+                  <select
+                    className="admin-input max-w-[14rem] py-2 text-sm"
+                    value={p.teamId ?? ''}
+                    disabled={isLoading(`team:${p.id}`)}
+                    onChange={(e) => updatePlayerTeam(p.id, e.target.value)}
+                  >
+                    <option value="" disabled>
+                      Asignar equipo
+                    </option>
+                    {teams.map((team) => (
+                      <option key={team.id} value={team.id}>
+                        {team.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             )}
             {!isFinished && (

@@ -31,12 +31,17 @@ export function useAdminTournament() {
   }, [refresh]);
 
   async function selectTournament(id: string) {
+    if (id === tournamentId) return;
+
     const res = await fetch('/api/admin/tournament-context', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tournamentId: id }),
     });
-    if (res.ok) await refresh();
+    if (res.ok) {
+      // Cada isla React tiene su propio estado; recargar asegura datos del torneo activo.
+      window.location.reload();
+    }
   }
 
   return { tournamentId, tournament, loading, refresh, selectTournament };

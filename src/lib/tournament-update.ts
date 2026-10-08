@@ -1,5 +1,5 @@
 import type { tournaments } from './db/schema';
-import { canEditFormat } from './tournament';
+import { canEditFormat, canEditTeamMode } from './tournament';
 import {
   findConflictingFeaturedRegistration,
   validateTournamentFlags,
@@ -36,6 +36,10 @@ export function buildTournamentUpdates(
     }
   }
 
+  if (typeof body.isTeamTournament === 'boolean' && canEditTeamMode(current)) {
+    updates.isTeamTournament = body.isTeamTournament;
+  }
+
   if (body.status) {
     const allowed = ['registration_open', 'registration_closed', 'live', 'finished', 'draft'];
     if (allowed.includes(body.status as string)) {
@@ -49,6 +53,21 @@ export function buildTournamentUpdates(
   }
 
   const merged = { ...current, ...updates };
+
+  if (merged.isTeamTournament && merged.format !== 'swiss') {
+    return {
+      updates,
+      error: 'Los torneos por equipos solo están disponibles en formato suizo',
+    };
+  }
+
+  if (merged.isTeamTournament && updates.format === 'knockout') {
+    return {
+      updates,
+      error: 'No puedes cambiar a eliminatoria mientras el torneo sea por equipos',
+    };
+  }
+
   const flagError = validateTournamentFlags({
     showOnHome: merged.showOnHome,
     publicRegistration: merged.publicRegistration,

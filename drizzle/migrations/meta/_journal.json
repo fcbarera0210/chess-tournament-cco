@@ -14,6 +14,27 @@
       "when": 1781710000000,
       "tag": "0001_venue_maps_url",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781711000000,
+      "tag": "0002_tournament_photos",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781712000000,
+      "tag": "0003_tournament_visibility",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1781713000000,
+      "tag": "0004_team_tournaments",
+      "breakpoints": true
     }
   ]
 }

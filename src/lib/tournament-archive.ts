@@ -1,8 +1,8 @@
 import { eq, asc } from 'drizzle-orm';
 import { db } from './db';
-import { players, rounds } from './db/schema';
-import { getGamesForRound } from './tournament';
-import { computeStandings } from './standings';
+import { players, rounds, teams } from './db/schema';
+import { getGamesForRound, getTournamentById } from './tournament';
+import { computeStandings, computeTeamStandings } from './standings';
 import { formatResult } from './standings-calc';
 
 export function formatResultNotation(result: string): string {
@@ -27,7 +27,10 @@ export function formatResultNotation(result: string): string {
 }
 
 export async function buildTournamentArchive(tournamentId: string) {
+  const tournament = await getTournamentById(tournamentId);
   const standings = await computeStandings(tournamentId);
+  const teamStandings =
+    tournament?.isTeamTournament ? await computeTeamStandings(tournamentId) : [];
 
   const participantRows = await db
     .select({
@@ -35,8 +38,11 @@ export async function buildTournamentArchive(tournamentId: string) {
       name: players.name,
       clubLevel: players.clubLevel,
       status: players.status,
+      teamId: players.teamId,
+      teamName: teams.name,
     })
     .from(players)
+    .leftJoin(teams, eq(players.teamId, teams.id))
     .where(eq(players.tournamentId, tournamentId))
     .orderBy(asc(players.name));
 
@@ -67,6 +73,8 @@ export async function buildTournamentArchive(tournamentId: string) {
 
   return {
     standings,
+    teamStandings,
+    isTeamTournament: Boolean(tournament?.isTeamTournament),
     participants: participantRows.filter((p) => p.status !== 'withdrawn'),
     rounds: roundsWithGames,
   };

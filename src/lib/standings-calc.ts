@@ -1,6 +1,8 @@
 export type StandingRow = {
   playerId: string;
   name: string;
+  teamId?: string | null;
+  teamName?: string | null;
   points: number;
   gamesPlayed: number;
   wins: number;
@@ -85,7 +87,13 @@ export function sortStandings(rows: StandingRow[]): StandingRow[] {
 }
 
 export function buildStandingsFromGames(
-  playerList: { id: string; name: string; status: string }[],
+  playerList: {
+    id: string;
+    name: string;
+    status: string;
+    teamId?: string | null;
+    teamName?: string | null;
+  }[],
   allGames: GameLike[],
 ): StandingRow[] {
   const standingsMap = new Map<string, StandingRow>();
@@ -95,6 +103,8 @@ export function buildStandingsFromGames(
     standingsMap.set(player.id, {
       playerId: player.id,
       name: player.name,
+      teamId: player.teamId ?? null,
+      teamName: player.teamName ?? null,
       points: 0,
       gamesPlayed: 0,
       wins: 0,

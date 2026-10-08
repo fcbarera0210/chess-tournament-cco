@@ -60,6 +60,17 @@ export const authConfig: AuthConfig = {
     signIn: '/admin/login',
     error: '/admin/login',
   },
+  logger: {
+    error(error) {
+      // Login fallido es esperado; no ensuciar logs como error de servidor.
+      const code =
+        error && typeof error === 'object' && 'type' in error
+          ? String((error as { type?: string }).type)
+          : error?.name;
+      if (code === 'CredentialsSignin') return;
+      console.error('[auth]', error);
+    },
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

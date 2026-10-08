@@ -1,0 +1,1 @@
+export const MIN_TEAMS_FOR_TEAM_TOURNAMENT = 2;

@@ -99,7 +99,13 @@ const venue = tournament.venue;
         </div>
 
         <div class="bg-surface p-8 md:p-12">
-          <RegistrationForm client:load slug={slug} eventDate={eventDate} venue={venue} />
+          <RegistrationForm
+            client:load
+            slug={slug}
+            eventDate={eventDate}
+            venue={venue}
+            isTeamTournament={tournament.isTeamTournament}
+          />
         </div>
       </div>
     )

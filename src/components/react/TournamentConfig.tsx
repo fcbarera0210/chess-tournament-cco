@@ -23,6 +23,7 @@ type Tournament = {
   waitlistEnabled: boolean;
   showOnHome: boolean;
   publicRegistration: boolean;
+  isTeamTournament: boolean;
 };
 
 const SUCCESS_MESSAGES = new Set([
@@ -112,6 +113,7 @@ export function TournamentConfig() {
   const saving =
     isLoading('save-blur') ||
     isLoading('format') ||
+    isLoading('team-mode') ||
     isLoading('registration') ||
     isLoading('finished') ||
     isLoading('visibility-home') ||
@@ -243,7 +245,7 @@ export function TournamentConfig() {
                 <button
                   key={f}
                   type="button"
-                  disabled={isLoading('format')}
+                  disabled={isLoading('format') || (tournament.isTeamTournament && f === 'knockout')}
                   onClick={() => {
                     setTournament({ ...tournament, format: f });
                     save({ format: f }, 'format');
@@ -258,7 +260,55 @@ export function TournamentConfig() {
                 </button>
               ))}
             </div>
+            {tournament.isTeamTournament && (
+              <p className="mt-2 text-xs text-muted">Por equipos solo admite formato suizo.</p>
+            )}
           </div>
+        )}
+
+        {canEditFormatFields && (
+          <label className="flex cursor-pointer items-start gap-3 border-t border-border pt-4">
+            <input
+              type="checkbox"
+              checked={tournament.isTeamTournament}
+              disabled={saving || isFinished}
+              onChange={(e) => {
+                const isTeamTournament = e.target.checked;
+                if (
+                  !isTeamTournament &&
+                  !confirm(
+                    'Al desactivar el modo por equipos se eliminarán los equipos y las asignaciones. ¿Continuar?',
+                  )
+                ) {
+                  return;
+                }
+                setTournament({
+                  ...tournament,
+                  isTeamTournament,
+                  format: isTeamTournament ? 'swiss' : tournament.format,
+                });
+                save(
+                  {
+                    isTeamTournament,
+                    ...(isTeamTournament ? { format: 'swiss' as const } : {}),
+                  },
+                  'team-mode',
+                );
+              }}
+              className="mt-1"
+            />
+            <span>
+              <span className="block text-sm font-medium">Torneo por equipos</span>
+              <span className="text-xs text-muted">
+                Clasificación por suma de puntos de los jugadores (estilo Olympiad). Gestiona equipos
+                en{' '}
+                <a href="/admin/equipos" className="underline">
+                  Equipos
+                </a>
+                .
+              </span>
+            </span>
+          </label>
         )}
 
         <div className="border-t border-border pt-4">

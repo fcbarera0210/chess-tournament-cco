@@ -1,11 +1,16 @@
 import type { APIRoute } from 'astro';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../../lib/db';
-import { players } from '../../lib/db/schema';
+import { players, teams } from '../../lib/db/schema';
 import { withAdmin } from '../../lib/session';
 import { requireAdminTournament } from '../../lib/admin-tournament-context';
 import { isTournamentLocked } from '../../lib/tournament';
 import { invalidatePublicTournamentCache } from '../../lib/cache-invalidation';
+import {
+  countTeamsByTournament,
+  getTeamInTournament,
+  validateTeamTournamentReady,
+} from '../../lib/teams';
 
 export const prerender = false;
 
@@ -17,13 +22,28 @@ export const GET: APIRoute = async ({ request }) =>
     }
 
     const list = await db
-      .select()
+      .select({
+        id: players.id,
+        tournamentId: players.tournamentId,
+        teamId: players.teamId,
+        teamName: teams.name,
+        name: players.name,
+        contact: players.contact,
+        clubLevel: players.clubLevel,
+        status: players.status,
+        seed: players.seed,
+        createdAt: players.createdAt,
+      })
       .from(players)
+      .leftJoin(teams, eq(players.teamId, teams.id))
       .where(eq(players.tournamentId, tournament.id));
 
-    return new Response(JSON.stringify({ players: list }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ players: list, isTeamTournament: tournament.isTeamTournament }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
   });
 
 export const POST: APIRoute = async ({ request, cache }) =>
@@ -40,7 +60,7 @@ export const POST: APIRoute = async ({ request, cache }) =>
       );
     }
 
-    let body: { name?: string; contact?: string; clubLevel?: string };
+    let body: { name?: string; contact?: string; clubLevel?: string; teamId?: string | null };
     try {
       body = await request.json();
     } catch {
@@ -61,6 +81,25 @@ export const POST: APIRoute = async ({ request, cache }) =>
         ? body.clubLevel.trim()
         : null;
 
+    let resolvedTeamId: string | null = null;
+    if (tournament.isTeamTournament) {
+      const teamCount = await countTeamsByTournament(tournament.id);
+      const teamReadyError = validateTeamTournamentReady(teamCount);
+      if (teamReadyError) {
+        return new Response(JSON.stringify({ error: teamReadyError }), { status: 400 });
+      }
+
+      const teamId = typeof body.teamId === 'string' ? body.teamId.trim() : '';
+      if (!teamId) {
+        return new Response(JSON.stringify({ error: 'Debes asignar un equipo' }), { status: 400 });
+      }
+      const team = await getTeamInTournament(teamId, tournament.id);
+      if (!team) {
+        return new Response(JSON.stringify({ error: 'Equipo no válido' }), { status: 400 });
+      }
+      resolvedTeamId = team.id;
+    }
+
     const [player] = await db
       .insert(players)
       .values({
@@ -68,6 +107,7 @@ export const POST: APIRoute = async ({ request, cache }) =>
         name,
         contact,
         clubLevel,
+        teamId: resolvedTeamId,
         status: 'checked_in',
       })
       .returning();
@@ -94,6 +134,7 @@ export const PATCH: APIRoute = async ({ request, cache }) =>
       name?: string;
       contact?: string;
       clubLevel?: string;
+      teamId?: string | null;
     };
     try {
       body = await request.json();
@@ -138,8 +179,12 @@ export const PATCH: APIRoute = async ({ request, cache }) =>
       });
     }
 
-    const profileUpdates: Partial<{ name: string; contact: string; clubLevel: string | null }> =
-      {};
+    const profileUpdates: Partial<{
+      name: string;
+      contact: string;
+      clubLevel: string | null;
+      teamId: string | null;
+    }> = {};
 
     if (typeof body.name === 'string') {
       const trimmedName = body.name.trim();
@@ -157,6 +202,23 @@ export const PATCH: APIRoute = async ({ request, cache }) =>
 
     if (typeof body.clubLevel === 'string') {
       profileUpdates.clubLevel = body.clubLevel.trim() || null;
+    }
+
+    if (body.teamId !== undefined) {
+      if (!tournament.isTeamTournament) {
+        return new Response(
+          JSON.stringify({ error: 'Este torneo no está en modo por equipos' }),
+          { status: 400 },
+        );
+      }
+      if (body.teamId === null || body.teamId === '') {
+        return new Response(JSON.stringify({ error: 'Debes asignar un equipo' }), { status: 400 });
+      }
+      const team = await getTeamInTournament(body.teamId, tournament.id);
+      if (!team) {
+        return new Response(JSON.stringify({ error: 'Equipo no válido' }), { status: 400 });
+      }
+      profileUpdates.teamId = team.id;
     }
 
     if (Object.keys(profileUpdates).length > 0) {

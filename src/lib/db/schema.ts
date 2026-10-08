@@ -52,6 +52,16 @@ export const tournaments = pgTable('tournaments', {
   waitlistEnabled: boolean('waitlist_enabled').notNull().default(true),
   showOnHome: boolean('show_on_home').notNull().default(false),
   publicRegistration: boolean('public_registration').notNull().default(false),
+  isTeamTournament: boolean('is_team_tournament').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const teams = pgTable('teams', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tournamentId: uuid('tournament_id')
+    .notNull()
+    .references(() => tournaments.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -60,6 +70,7 @@ export const players = pgTable('players', {
   tournamentId: uuid('tournament_id')
     .notNull()
     .references(() => tournaments.id, { onDelete: 'cascade' }),
+  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'set null' }),
   name: text('name').notNull(),
   contact: text('contact').notNull(),
   clubLevel: text('club_level'),
@@ -114,6 +125,15 @@ export const tournamentsRelations = relations(tournaments, ({ many }) => ({
   players: many(players),
   rounds: many(rounds),
   photos: many(tournamentPhotos),
+  teams: many(teams),
+}));
+
+export const teamsRelations = relations(teams, ({ one, many }) => ({
+  tournament: one(tournaments, {
+    fields: [teams.tournamentId],
+    references: [tournaments.id],
+  }),
+  players: many(players),
 }));
 
 export const tournamentPhotosRelations = relations(tournamentPhotos, ({ one }) => ({
@@ -127,6 +147,10 @@ export const playersRelations = relations(players, ({ one, many }) => ({
   tournament: one(tournaments, {
     fields: [players.tournamentId],
     references: [tournaments.id],
+  }),
+  team: one(teams, {
+    fields: [players.teamId],
+    references: [teams.id],
   }),
   whiteGames: many(games, { relationName: 'whitePlayer' }),
   blackGames: many(games, { relationName: 'blackPlayer' }),

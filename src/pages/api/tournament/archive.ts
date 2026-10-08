@@ -32,6 +32,7 @@ export const GET: APIRoute = async ({ url }) => {
         timeControl: tournament.timeControl,
         plannedRounds: tournament.plannedRounds,
         status: tournament.status,
+        isTeamTournament: tournament.isTeamTournament,
       },
       ...archive,
     }),

@@ -5,6 +5,7 @@ import { publicApiUrl } from '../../lib/admin-api';
 type Standing = {
   playerId: string;
   name: string;
+  teamName?: string | null;
   points: number;
   gamesPlayed: number;
   wins: number;
@@ -13,11 +14,20 @@ type Standing = {
   buchholzCut1: number;
 };
 
+type TeamStanding = {
+  teamId: string;
+  name: string;
+  points: number;
+  buchholzCut1: number;
+  playerCount: number;
+};
+
 type Participant = {
   id: string;
   name: string;
   clubLevel: string | null;
   status: string;
+  teamName?: string | null;
 };
 
 type RoundGame = {
@@ -46,8 +56,10 @@ type ArchiveData = {
     format: string;
     timeControl: string;
     status: string;
+    isTeamTournament?: boolean;
   };
   standings?: Standing[];
+  teamStandings?: TeamStanding[];
   participants?: Participant[];
   rounds?: Round[];
 };
@@ -84,7 +96,14 @@ export function TournamentArchive({ slug }: { slug: string }) {
     );
   }
 
-  const { tournament, standings = [], participants = [], rounds = [] } = data;
+  const {
+    tournament,
+    standings = [],
+    teamStandings = [],
+    participants = [],
+    rounds = [],
+  } = data;
+  const isTeamTournament = Boolean(tournament.isTeamTournament);
   const eventDate = formatEventDate(tournament.eventDate);
 
   return (
@@ -109,19 +128,61 @@ export function TournamentArchive({ slug }: { slug: string }) {
           </a>
         )}
         <p className="mt-4 text-sm text-white/50">
-          Formato {tournament.format === 'swiss' ? 'suizo' : 'eliminatoria'} · control{' '}
-          {tournament.timeControl}
+          Formato {tournament.format === 'swiss' ? 'suizo' : 'eliminatoria'}
+          {isTeamTournament ? ' por equipos' : ''} · control {tournament.timeControl}
         </p>
       </section>
 
+      {isTeamTournament && teamStandings.length > 0 && (
+        <section>
+          <h2 className="font-display mb-6 text-2xl font-bold md:text-3xl">
+            Clasificación por equipos
+          </h2>
+          <div className="overflow-x-auto rounded-3xl bg-surface shadow-lg">
+            <table className="w-full min-w-[420px] text-left text-sm">
+              <thead className="border-b border-border bg-bg">
+                <tr>
+                  <th className="px-5 py-4 font-display font-bold">#</th>
+                  <th className="px-5 py-4 font-display font-bold">Equipo</th>
+                  <th className="px-5 py-4 text-center font-display font-bold">Pts</th>
+                  <th className="hidden px-5 py-4 text-center font-semibold md:table-cell">BH</th>
+                  <th className="hidden px-5 py-4 text-center font-semibold sm:table-cell">Jug.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {teamStandings.map((s, i) => (
+                  <tr
+                    key={s.teamId}
+                    className={`border-b border-border/50 last:border-0 ${i < 3 ? 'bg-bg/50' : ''}`}
+                  >
+                    <td className="px-5 py-4 font-display font-bold text-muted">{i + 1}</td>
+                    <td className="px-5 py-4 font-semibold">{s.name}</td>
+                    <td className="px-5 py-4 text-center font-display text-lg font-bold">
+                      {s.points}
+                    </td>
+                    <td className="hidden px-5 py-4 text-center md:table-cell">{s.buchholzCut1}</td>
+                    <td className="hidden px-5 py-4 text-center sm:table-cell">{s.playerCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       <section>
-        <h2 className="font-display mb-6 text-2xl font-bold md:text-3xl">Clasificación final</h2>
+        <h2 className="font-display mb-6 text-2xl font-bold md:text-3xl">
+          {isTeamTournament ? 'Clasificación individual' : 'Clasificación final'}
+        </h2>
         <div className="overflow-x-auto rounded-3xl bg-surface shadow-lg">
           <table className="w-full min-w-[480px] text-left text-sm">
             <thead className="border-b border-border bg-bg">
               <tr>
                 <th className="px-5 py-4 font-display font-bold">#</th>
                 <th className="px-5 py-4 font-display font-bold">Jugador</th>
+                {isTeamTournament && (
+                  <th className="hidden px-5 py-4 font-semibold sm:table-cell">Equipo</th>
+                )}
                 <th className="px-5 py-4 text-center font-display font-bold">Pts</th>
                 <th
                   className="hidden px-5 py-4 text-center font-semibold md:table-cell"
@@ -142,7 +203,19 @@ export function TournamentArchive({ slug }: { slug: string }) {
                   className={`border-b border-border/50 last:border-0 ${i < 3 ? 'bg-bg/50' : ''}`}
                 >
                   <td className="px-5 py-4 font-display font-bold text-muted">{i + 1}</td>
-                  <td className="px-5 py-4 font-semibold">{s.name}</td>
+                  <td className="px-5 py-4 font-semibold">
+                    {s.name}
+                    {isTeamTournament && s.teamName ? (
+                      <span className="mt-0.5 block text-xs font-normal text-muted sm:hidden">
+                        {s.teamName}
+                      </span>
+                    ) : null}
+                  </td>
+                  {isTeamTournament && (
+                    <td className="hidden px-5 py-4 text-muted sm:table-cell">
+                      {s.teamName ?? '—'}
+                    </td>
+                  )}
                   <td className="px-5 py-4 text-center font-display text-lg font-bold">{s.points}</td>
                   <td className="hidden px-5 py-4 text-center md:table-cell">{s.buchholzCut1}</td>
                   <td className="hidden px-5 py-4 text-center sm:table-cell">{s.gamesPlayed}</td>
@@ -162,6 +235,9 @@ export function TournamentArchive({ slug }: { slug: string }) {
           {participants.map((p) => (
             <div key={p.id} className="card-light p-4 shadow-sm">
               <p className="font-semibold">{p.name}</p>
+              {isTeamTournament && p.teamName && (
+                <p className="mt-1 text-sm text-muted">{p.teamName}</p>
+              )}
               {p.clubLevel && <p className="mt-1 text-sm text-muted">{p.clubLevel}</p>}
             </div>
           ))}

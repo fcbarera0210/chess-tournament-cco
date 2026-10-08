@@ -1,9 +1,9 @@
 import type { APIRoute } from 'astro';
 import { eq } from 'drizzle-orm';
 import { db } from '../../lib/db';
-import { players } from '../../lib/db/schema';
+import { players, teams } from '../../lib/db/schema';
 import { getTournamentBySlug } from '../../lib/tournament';
-import { computeStandings } from '../../lib/standings';
+import { computeStandings, computeTeamStandings } from '../../lib/standings';
 
 export const prerender = false;
 
@@ -19,9 +19,19 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   const standings = await computeStandings(tournament.id);
+  const teamStandings = tournament.isTeamTournament
+    ? await computeTeamStandings(tournament.id)
+    : [];
   const registeredPlayers = await db
-    .select({ id: players.id, name: players.name, status: players.status })
+    .select({
+      id: players.id,
+      name: players.name,
+      status: players.status,
+      teamId: players.teamId,
+      teamName: teams.name,
+    })
     .from(players)
+    .leftJoin(teams, eq(players.teamId, teams.id))
     .where(eq(players.tournamentId, tournament.id));
 
   return new Response(
@@ -31,8 +41,10 @@ export const GET: APIRoute = async ({ url }) => {
         status: tournament.status,
         format: tournament.format,
         plannedRounds: tournament.plannedRounds,
+        isTeamTournament: tournament.isTeamTournament,
       },
       standings,
+      teamStandings,
       players: registeredPlayers.filter((p) => p.status !== 'withdrawn'),
     }),
     { headers: { 'Content-Type': 'application/json' } },

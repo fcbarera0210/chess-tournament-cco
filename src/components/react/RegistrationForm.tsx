@@ -1,20 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { publicApiUrl } from '../../lib/admin-api';
+
+type TeamOption = { id: string; name: string };
 
 type Props = {
   slug: string;
   eventDate: string;
   venue: string;
+  isTeamTournament?: boolean;
 };
 
-export function RegistrationForm({ slug, eventDate, venue }: Props) {
+export function RegistrationForm({ slug, eventDate, venue, isTeamTournament = false }: Props) {
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [clubLevel, setClubLevel] = useState('');
+  const [teamId, setTeamId] = useState('');
+  const [teams, setTeams] = useState<TeamOption[]>([]);
+  const [teamsLoading, setTeamsLoading] = useState(isTeamTournament);
   const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState<{ status: string; name: string } | null>(null);
+
+  useEffect(() => {
+    if (!isTeamTournament) return;
+
+    setTeamsLoading(true);
+    fetch(publicApiUrl('/api/teams', slug))
+      .then((r) => r.json())
+      .then((data) => {
+        setTeams(data.teams ?? []);
+      })
+      .catch(() => setTeams([]))
+      .finally(() => setTeamsLoading(false));
+  }, [isTeamTournament, slug]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,7 +44,13 @@ export function RegistrationForm({ slug, eventDate, venue }: Props) {
       const res = await fetch(publicApiUrl('/api/registrations', slug), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, contact, clubLevel, confirmed }),
+        body: JSON.stringify({
+          name,
+          contact,
+          clubLevel,
+          confirmed,
+          ...(isTeamTournament ? { teamId } : {}),
+        }),
       });
 
       const data = await res.json();
@@ -64,6 +89,8 @@ export function RegistrationForm({ slug, eventDate, venue }: Props) {
     );
   }
 
+  const teamsReady = !isTeamTournament || teams.length >= 2;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <div>
@@ -74,6 +101,13 @@ export function RegistrationForm({ slug, eventDate, venue }: Props) {
       {error && (
         <div className="rounded-lg border border-accent/20 bg-accent/5 px-4 py-3 text-sm text-accent">
           {error}
+        </div>
+      )}
+
+      {isTeamTournament && !teamsLoading && !teamsReady && (
+        <div className="rounded-lg border border-pending/30 bg-pending/10 px-4 py-3 text-sm text-pending">
+          Las inscripciones por equipos aún no están listas. El organizador debe crear al menos dos
+          equipos.
         </div>
       )}
 
@@ -90,6 +124,7 @@ export function RegistrationForm({ slug, eventDate, venue }: Props) {
           onChange={(e) => setName(e.target.value)}
           className="input-minimal"
           placeholder="Tu nombre"
+          disabled={!teamsReady}
         />
       </div>
 
@@ -106,8 +141,32 @@ export function RegistrationForm({ slug, eventDate, venue }: Props) {
           onChange={(e) => setContact(e.target.value)}
           className="input-minimal"
           placeholder="correo@ejemplo.com o +56 9 ..."
+          disabled={!teamsReady}
         />
       </div>
+
+      {isTeamTournament && (
+        <div>
+          <label className="mb-1 block text-sm font-medium text-muted" htmlFor="team">
+            Equipo
+          </label>
+          <select
+            id="team"
+            required
+            value={teamId}
+            onChange={(e) => setTeamId(e.target.value)}
+            className="input-minimal"
+            disabled={teamsLoading || !teamsReady}
+          >
+            <option value="">{teamsLoading ? 'Cargando equipos...' : 'Selecciona tu equipo'}</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div>
         <label className="mb-1 block text-sm font-medium text-muted" htmlFor="club">
@@ -120,6 +179,7 @@ export function RegistrationForm({ slug, eventDate, venue }: Props) {
           onChange={(e) => setClubLevel(e.target.value)}
           className="input-minimal"
           placeholder="Principiante, club local, Elo ~1200..."
+          disabled={!teamsReady}
         />
       </div>
 
@@ -130,6 +190,7 @@ export function RegistrationForm({ slug, eventDate, venue }: Props) {
           onChange={(e) => setConfirmed(e.target.checked)}
           className="mt-1 h-4 w-4 rounded border-border accent-ink"
           required
+          disabled={!teamsReady}
         />
         <span>
           Confirmo que puedo asistir el {eventDate} en {venue} y acepto las{' '}
@@ -142,7 +203,7 @@ export function RegistrationForm({ slug, eventDate, venue }: Props) {
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || !teamsReady}
         className="btn-pill btn-pill-primary w-full py-4 disabled:opacity-60"
       >
         {loading ? 'Enviando...' : 'Enviar inscripción'}

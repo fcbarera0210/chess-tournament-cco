@@ -4,6 +4,7 @@ const links = [
   { href: '/admin', label: 'Dashboard' },
   { href: '/admin/torneos', label: 'Torneos' },
   { href: '/admin/jugadores', label: 'Jugadores' },
+  { href: '/admin/equipos', label: 'Equipos' },
   { href: '/admin/torneo', label: 'Config' },
   { href: '/admin/rondas', label: 'Rondas' },
   { href: '/admin/galeria', label: 'Galería' },

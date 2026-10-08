@@ -8,6 +8,11 @@ import { resolveAdminTournamentId } from '../../lib/admin-tournament-context';
 import { getTournamentById } from '../../lib/tournament';
 import { buildTournamentUpdates, assertFeaturedRegistrationUnique } from '../../lib/tournament-update';
 import { invalidatePublicTournamentCache } from '../../lib/cache-invalidation';
+import {
+  countTeamsByTournament,
+  deleteTeamsForTournament,
+  validateTeamTournamentReady,
+} from '../../lib/teams';
 
 export const prerender = false;
 
@@ -45,6 +50,18 @@ export const PATCH: APIRoute = async ({ request, cache }) =>
     const conflictError = await assertFeaturedRegistrationUnique(tournament.id, merged);
     if (conflictError) {
       return new Response(JSON.stringify({ error: conflictError }), { status: 409 });
+    }
+
+    if (merged.isTeamTournament && updates.status === 'live') {
+      const teamCount = await countTeamsByTournament(tournament.id);
+      const teamError = validateTeamTournamentReady(teamCount);
+      if (teamError) {
+        return new Response(JSON.stringify({ error: teamError }), { status: 400 });
+      }
+    }
+
+    if (updates.isTeamTournament === false && tournament.isTeamTournament) {
+      await deleteTeamsForTournament(tournament.id);
     }
 
     const [updated] = await db

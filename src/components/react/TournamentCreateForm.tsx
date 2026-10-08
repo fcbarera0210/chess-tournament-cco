@@ -12,6 +12,7 @@ export function TournamentCreateForm() {
     maxPlayers: 20,
     showOnHome: false,
     publicRegistration: false,
+    isTeamTournament: false,
   });
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -108,6 +109,25 @@ export function TournamentCreateForm() {
             className="admin-input mt-1 w-full"
           />
         </label>
+
+        <div className="space-y-3 border-t border-border pt-4">
+          <p className="text-sm font-medium">Modalidad</p>
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={form.isTeamTournament}
+              onChange={(e) => update('isTeamTournament', e.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              <span className="block text-sm font-medium">Torneo por equipos</span>
+              <span className="text-xs text-muted">
+                Solo suizo. Después creas los equipos en admin; la inscripción exige elegir equipo.
+                Clasificación por suma de puntos (estilo Olympiad).
+              </span>
+            </span>
+          </label>
+        </div>
 
         <div className="space-y-3 border-t border-border pt-4">
           <p className="text-sm font-medium">Visibilidad</p>

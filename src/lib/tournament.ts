@@ -1,6 +1,6 @@
 import { eq, and, inArray, sql, asc, desc, ne } from 'drizzle-orm';
 import { db } from './db';
-import { tournaments, players, rounds, games } from './db/schema';
+import { tournaments, players, rounds, games, teams } from './db/schema';
 
 const FEATURED_STATUSES = ['registration_open', 'live'] as const;
 
@@ -189,6 +189,10 @@ export function canEditFormat(tournament: { status: string }) {
   );
 }
 
+export function canEditTeamMode(tournament: { status: string }) {
+  return canEditFormat(tournament);
+}
+
 export function isRegistrationOpen(
   tournament: { status: string; maxPlayers: number; publicRegistration: boolean },
   registeredCount: number,
@@ -209,6 +213,7 @@ export async function resetTournamentData(
 
   if (mode === 'full') {
     await db.delete(players).where(eq(players.tournamentId, tournamentId));
+    await db.delete(teams).where(eq(teams.tournamentId, tournamentId));
     newStatus = 'registration_open';
   } else if (currentStatus === 'live' || currentStatus === 'finished') {
     newStatus = 'registration_closed';
